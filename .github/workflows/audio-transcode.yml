@@ -1,0 +1,107 @@
+# Audio transcode pipeline.
+#
+# This job exists because it CANNOT run on Vercel: loudness-normalising and
+# Opus-encoding a studio batch is a long-running ffmpeg task, and a Vercel
+# Function's duration and 4.5 MB body limit both rule it out. Spec section 10,
+# constraint 4.
+#
+# Masters land in R2 under `incoming/<lang>/<conceptId>.wav` (put there by the
+# presigned upload from /api/admin/upload-url). This workflow normalises them to
+# -16 LUFS, trims leading silence, encodes to ~48 kbps Opus, and writes the
+# derivative to `audio/<lang>/<conceptId>.opus`.
+#
+# It deliberately does NOT set `status = approved`. Only a human reviewer does
+# that, twice, per spec section 12.
+name: audio-transcode
+
+on:
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: Language code to process (tl / ceb / ilo / hil)
+        required: true
+        type: choice
+        options: [tl, ceb, ilo, hil]
+  schedule:
+    # Sweep for anything uploaded during the day.
+    - cron: '0 18 * * *'
+
+concurrency:
+  group: audio-transcode
+  cancel-in-progress: false
+
+jobs:
+  transcode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: Configure rclone for R2
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          sudo -v && curl -fsSL https://rclone.org/install.sh | sudo bash
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<CONF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${R2_ACCESS_KEY_ID}
+          secret_access_key = ${R2_SECRET_ACCESS_KEY}
+          endpoint = https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+          acl = private
+          CONF
+
+      - name: Pull masters
+        env:
+          LANG_CODE: ${{ inputs.lang || 'tl' }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          mkdir -p in out
+          rclone copy "r2:${R2_BUCKET}/incoming/${LANG_CODE}" in --include "*.wav" --include "*.flac"
+          ls -la in || true
+
+      - name: Normalise and encode
+        run: |
+          shopt -s nullglob
+          for f in in/*.wav in/*.flac; do
+            base=$(basename "${f%.*}")
+            echo "→ $base"
+            # Trim leading silence to 40ms, normalise to -16 LUFS, encode Opus.
+            ffmpeg -hide_banner -loglevel error -y -i "$f" \
+              -af "silenceremove=start_periods=1:start_silence=0.04:start_threshold=-50dB,loudnorm=I=-16:TP=-1.5:LRA=11" \
+              -c:a libopus -b:a 48k -ar 48000 -ac 1 \
+              "out/${base}.opus"
+          done
+          ls -la out || true
+
+      - name: Push derivatives
+        env:
+          LANG_CODE: ${{ inputs.lang || 'tl' }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          if [ -z "$(ls -A out 2>/dev/null)" ]; then
+            echo "Nothing to publish."; exit 0
+          fi
+          rclone copy out "r2:${R2_BUCKET}/audio/${LANG_CODE}"
+
+      - name: Mark forms as recorded
+        env:
+          LANG_CODE: ${{ inputs.lang || 'tl' }}
+          APP_URL: ${{ secrets.APP_URL }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          if [ -z "$(ls -A out 2>/dev/null)" ]; then exit 0; fi
+          ids=$(ls out | sed 's/\.opus$//' | paste -sd, -)
+          curl -fsS -X POST "${APP_URL}/api/admin/mark-recorded" \
+            -H "authorization: Bearer ${ADMIN_TOKEN}" \
+            -H "content-type: application/json" \
+            -d "{\"lang\":\"${LANG_CODE}\",\"conceptIds\":\"${ids}\"}"
