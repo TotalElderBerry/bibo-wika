@@ -20,7 +20,9 @@ onMounted(async () => {
 async function confirm() {
   if (!picked.value) return
   await profile.pickLang(picked.value)
-  await navigateTo('/laro/hayop')
+  // The hub, not a lesson. With one topic authored this jumped straight into
+  // it; with six, dropping a child into Hayop every time hides the other five.
+  await navigateTo('/laro')
 }
 
 useHead({ title: 'Anong wika?' })

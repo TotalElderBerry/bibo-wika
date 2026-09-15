@@ -12,8 +12,13 @@ async function submit() {
   if (loading.value) return
   error.value = ''
 
+  if (password.value.length < 8) {
+    error.value = 'Dapat 8 letra o higit ang password.'
+    return
+  }
+
   if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match.'
+    error.value = 'Hindi magkatugma ang mga password.'
     return
   }
 
@@ -22,13 +27,13 @@ async function submit() {
     await auth.register(displayName.value, email.value, password.value)
     await navigateTo('/magulang')
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Registration failed.'
+    error.value = err instanceof Error ? err.message : 'Hindi matuloy ang pagpaparehistro.'
   } finally {
     loading.value = false
   }
 }
 
-useHead({ title: 'Create parent account - Bibo Wika' })
+useHead({ title: 'Gumawa ng account - Bibo Wika' })
 </script>
 
 <template>
@@ -36,28 +41,28 @@ useHead({ title: 'Create parent account - Bibo Wika' })
     <main class="auth-wrap">
       <section class="intro">
         <NuxtLink to="/" class="mark">Bibo&nbsp;Wika</NuxtLink>
-        <p class="kicker">Parent account</p>
-        <h1 class="auth-title">Keep the child app simple.</h1>
+        <p class="kicker">Account ng magulang</p>
+        <h1 class="auth-title">Panatilihing simple ang app ng bata.</h1>
         <p class="auth-copy">
-          Create an adult account for family settings and future progress sync. The play experience
-          remains local-first and child-friendly.
+          Gumawa ng account para sa mga settings ng pamilya at para makita ang progreso. Ang laro
+          mismo ay nananatiling lokal at para sa bata.
         </p>
-        <NuxtLink to="/magulang/login" class="back lift">I already have an account</NuxtLink>
+        <NuxtLink to="/magulang/login" class="back lift">May account na ako</NuxtLink>
       </section>
 
       <form class="auth-card chunk" @submit.prevent="submit">
         <div>
-          <p class="say">Set up access</p>
-          <h2 class="heading">Create account</h2>
+          <p class="say">Magsimula</p>
+          <h2 class="heading">Gumawa ng account</h2>
         </div>
 
         <label class="field">
-          <span>Name</span>
+          <span>Pangalan</span>
           <input
             v-model.trim="displayName"
             autocomplete="name"
             name="name"
-            placeholder="Your name"
+            placeholder="Iyong pangalan"
             type="text"
             required
           />
@@ -83,20 +88,20 @@ useHead({ title: 'Create parent account - Bibo Wika' })
             autocomplete="new-password"
             minlength="8"
             name="password"
-            placeholder="At least 8 characters"
+            placeholder="8 letra o higit"
             type="password"
             required
           />
         </label>
 
         <label class="field">
-          <span>Confirm password</span>
+          <span>Ulitin ang password</span>
           <input
             v-model="confirmPassword"
             autocomplete="new-password"
             minlength="8"
             name="confirm-password"
-            placeholder="Repeat password"
+            placeholder="Ulitin ang password"
             type="password"
             required
           />
@@ -105,7 +110,7 @@ useHead({ title: 'Create parent account - Bibo Wika' })
         <p v-if="error" class="error" role="alert">{{ error }}</p>
 
         <BiboButton type="submit" tone="dahon" :disabled="loading">
-          {{ loading ? 'Creating...' : 'Create account' }}
+          {{ loading ? 'Ginagawa...' : 'Gumawa ng account' }}
         </BiboButton>
       </form>
     </main>

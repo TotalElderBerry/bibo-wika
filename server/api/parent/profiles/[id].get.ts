@@ -2,14 +2,14 @@ import { and, eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   if (!hasDb()) {
-    throw createError({ statusCode: 503, statusMessage: 'Database is required for child profiles' })
+    throw createError({ statusCode: 503, statusMessage: 'Kailangan ng database para sa mga profile ng bata' })
   }
 
   const parent = await requireParent(event)
   const id = getRouterParam(event, 'id')
 
   if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Profile ID is required' })
+    throw createError({ statusCode: 400, statusMessage: 'Kailangan ang ID ng profile' })
   }
 
   const db = useDb()
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!profile) {
-    throw createError({ statusCode: 404, statusMessage: 'Child profile not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Walang nahanap na profile ng bata' })
   }
 
   const progress = await db

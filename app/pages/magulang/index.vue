@@ -1,5 +1,23 @@
 <script setup lang="ts">
-const auth = useAuth()
+import { BUDDIES, type BuddyName } from '~/utils/buddies'
+import { LANGS, LANG_META, type Lang } from '~~/content/types'
+
+/**
+ * The parent dashboard.
+ *
+ * Every screen in this app except this one and the landing page is written for
+ * a child. This one is written for an adult, and it is the only place where
+ * anything can be created, renamed or deleted.
+ */
+/**
+ * Destructured, not `const auth = useAuth()`.
+ *
+ * `parent` is a ref, and Vue only unwraps refs that are top-level setup
+ * bindings - a ref reached through a plain object stays a ref in the template.
+ * `auth.parent?.displayName` was therefore always undefined, and the greeting
+ * on this page rendered as a bare "Kumusta, .".
+ */
+const { parent: parentAccount, logout } = useAuth()
 const profile = useProfile()
 
 interface ProfileSummary {
@@ -20,18 +38,18 @@ interface ProfilesResponse {
   profiles: ProfileSummary[]
 }
 
-const LANGUAGE_LABELS: Record<string, string> = {
-  tl: 'Tagalog',
-  ceb: 'Cebuano',
-  ilo: 'Ilocano',
-  hil: 'Hiligaynon',
+const BAND_LABELS: Record<'usbong' | 'puno', string> = {
+  usbong: 'Usbong, edad 4-7',
+  puno: 'Puno, edad 8-12',
 }
 
 const { data, pending, error: loadError, refresh } = await useFetch<ProfilesResponse>(
   '/api/parent/profiles',
 )
+
 const linking = ref(false)
 const linkError = ref('')
+const linkName = ref('')
 const linked = ref(false)
 const formOpen = ref(false)
 const saving = ref(false)
@@ -39,12 +57,15 @@ const deletingId = ref('')
 const activatingId = ref('')
 const selectedId = ref('')
 const formError = ref('')
-const activationError = ref('')
+/** Delete and activate failures. Kept apart from formError, which lives inside
+    the add/edit form and is invisible while that form is closed. */
+const listError = ref('')
+
 const form = reactive({
   id: '',
   displayName: '',
-  buddy: 'bibo',
-  lang: 'tl',
+  buddy: 'tikoy' as BuddyName,
+  lang: 'tl' as Lang,
   band: 'usbong' as 'usbong' | 'puno',
 })
 
@@ -53,16 +74,27 @@ const profiles = computed(() => data.value?.profiles ?? [])
 onMounted(async () => {
   await profile.load()
   selectedId.value = profile.id
+  linkName.value = ''
 })
 
 function languageName(lang: string) {
-  return LANGUAGE_LABELS[lang] ?? lang
+  return LANG_META[lang as Lang]?.name ?? lang
+}
+
+function bandName(band: 'usbong' | 'puno') {
+  return BAND_LABELS[band] ?? band
+}
+
+/** The stored buddy is free text as far as Postgres knows; the child app can
+    only draw the six in the roster. */
+function safeBuddy(value: string | undefined): BuddyName {
+  return BUDDIES.some((b) => b.id === value) ? (value as BuddyName) : 'tikoy'
 }
 
 function resetForm() {
   form.id = ''
   form.displayName = ''
-  form.buddy = 'bibo'
+  form.buddy = 'tikoy'
   form.lang = 'tl'
   form.band = 'usbong'
   formError.value = ''
@@ -76,8 +108,10 @@ function openCreate() {
 function openEdit(child: ProfileSummary) {
   form.id = child.id
   form.displayName = child.displayName
-  form.buddy = child.avatar.buddy ?? 'bibo'
-  form.lang = child.activeLang
+  form.buddy = safeBuddy(child.avatar.buddy)
+  form.lang = (LANGS as readonly string[]).includes(child.activeLang)
+    ? (child.activeLang as Lang)
+    : 'tl'
   form.band = child.band
   formError.value = ''
   formOpen.value = true
@@ -112,16 +146,18 @@ async function saveProfile() {
     formOpen.value = false
     resetForm()
   } catch (err) {
-    formError.value = apiErrorMessage(err, 'Could not save this child profile.')
+    formError.value = apiErrorMessage(err, 'Hindi ma-save ang profile na ito.')
   } finally {
     saving.value = false
   }
 }
 
 async function deleteProfile(child: ProfileSummary) {
-  if (deletingId.value || !window.confirm(`Delete ${child.displayName} and all saved progress?`)) return
+  if (deletingId.value) return
+  if (!window.confirm(`Burahin si ${child.displayName} at ang lahat ng progreso niya?`)) return
+
   deletingId.value = child.id
-  formError.value = ''
+  listError.value = ''
 
   try {
     await $fetch(`/api/parent/profiles/${child.id}`, { method: 'DELETE' })
@@ -129,9 +165,11 @@ async function deleteProfile(child: ProfileSummary) {
       formOpen.value = false
       resetForm()
     }
+    // The device keeps its own copy - this account simply no longer mirrors it.
+    if (selectedId.value === child.id) selectedId.value = ''
     await refresh()
   } catch (err) {
-    formError.value = apiErrorMessage(err, 'Could not delete this child profile.')
+    listError.value = apiErrorMessage(err, 'Hindi mabura ang profile na ito.')
   } finally {
     deletingId.value = ''
   }
@@ -145,14 +183,22 @@ async function linkCurrentProfile() {
   try {
     await profile.load()
     if (!profile.started || !profile.id || !profile.buddy || !profile.lang) {
-      throw new Error('Start a child profile on this device before linking it.')
+      throw new Error('Magsimula muna ng profile ng bata sa app bago ito i-link.')
+    }
+
+    const name = linkName.value.trim()
+    if (name.length < 2 || name.length > 80) {
+      throw new Error('Kailangan ng pangalan ng bata, 2 hanggang 80 letra.')
     }
 
     await $fetch('/api/parent/profiles/link', {
       method: 'POST',
       body: {
         id: profile.id,
-        displayName: profile.buddy,
+        // The child app never asks a four-year-old to type a name, so the
+        // device has none to send. The parent supplies it here rather than the
+        // dashboard silently filing the child under their buddy's name.
+        displayName: name,
         buddy: profile.buddy,
         lang: profile.lang,
         band: profile.band,
@@ -161,9 +207,11 @@ async function linkCurrentProfile() {
       },
     })
     linked.value = true
+    selectedId.value = profile.id
     await refresh()
   } catch (err) {
-    linkError.value = err instanceof Error ? err.message : 'Could not link this profile.'
+    linkError.value =
+      err instanceof Error ? err.message : apiErrorMessage(err, 'Hindi ma-link ang profile na ito.')
   } finally {
     linking.value = false
   }
@@ -172,7 +220,7 @@ async function linkCurrentProfile() {
 async function useProfileAccount(child: ProfileSummary) {
   if (activatingId.value) return
   activatingId.value = child.id
-  activationError.value = ''
+  listError.value = ''
 
   try {
     const result = await $fetch<{
@@ -189,7 +237,7 @@ async function useProfileAccount(child: ProfileSummary) {
     selectedId.value = child.id
     await navigateTo('/laro')
   } catch (err) {
-    activationError.value = apiErrorMessage(err, 'Could not activate this child account.')
+    listError.value = apiErrorMessage(err, 'Hindi mabuksan ang account na ito.')
   } finally {
     activatingId.value = ''
   }
@@ -202,13 +250,13 @@ useHead({ title: 'Magulang - Bibo Wika' })
   <div class="screen parent-home">
     <header class="top">
       <NuxtLink to="/" class="brand lift">Bibo Wika</NuxtLink>
-      <button class="logout lift" @click="auth.logout">Lumabas</button>
+      <button class="logout lift" @click="logout">Lumabas</button>
     </header>
 
     <main class="grow dash">
       <section class="hello chunk">
-        <p class="say">Parent dashboard</p>
-        <h1 class="heading">Kumusta, {{ auth.parent?.displayName }}.</h1>
+        <p class="say">Dashboard ng magulang</p>
+        <h1 class="heading">Kumusta, {{ parentAccount?.displayName }}.</h1>
         <p class="quiet">
           Tingnan ang progreso ng mga batang naka-link sa account na ito. Ang mga bata ay hindi
           kailangang mag-log in para maglaro.
@@ -218,62 +266,72 @@ useHead({ title: 'Magulang - Bibo Wika' })
       <section class="manage chunk">
         <div class="manage-head">
           <div>
-            <p class="say">Family profiles</p>
-            <h2 class="child-name">Manage child accounts</h2>
+            <p class="say">Mga profile ng pamilya</p>
+            <h2 class="child-name">Pamahalaan ang mga bata</h2>
           </div>
           <button class="small-action lift" @click="formOpen ? (formOpen = false) : openCreate()">
-            {{ formOpen ? 'Close' : 'Add child' }}
+            {{ formOpen ? 'Isara' : 'Magdagdag' }}
           </button>
         </div>
 
         <form v-if="formOpen" class="profile-form" @submit.prevent="saveProfile">
           <label class="field">
-            <span>Child name</span>
+            <span>Pangalan ng bata</span>
             <input v-model.trim="form.displayName" type="text" minlength="2" maxlength="80" required />
           </label>
           <label class="field">
-            <span>Buddy</span>
-            <input v-model.trim="form.buddy" type="text" maxlength="40" required />
-          </label>
-          <label class="field">
-            <span>Learning language</span>
-            <select v-model="form.lang">
-              <option value="tl">Tagalog</option>
-              <option value="ceb">Cebuano</option>
-              <option value="ilo">Ilocano</option>
-              <option value="hil">Hiligaynon</option>
+            <span>Kaibigan</span>
+            <!-- A select, not free text: the child app can only draw these six,
+                 and anything else silently became Tikoy at play time. -->
+            <select v-model="form.buddy">
+              <option v-for="b in BUDDIES" :key="b.id" :value="b.id">
+                {{ b.label }} - {{ b.species }}
+              </option>
             </select>
           </label>
           <label class="field">
-            <span>Learning band</span>
+            <span>Wikang inaaral</span>
+            <select v-model="form.lang">
+              <option v-for="l in LANGS" :key="l" :value="l">{{ LANG_META[l].name }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Antas</span>
             <select v-model="form.band">
-              <option value="usbong">Usbong, ages 4-7</option>
-              <option value="puno">Puno, ages 8-12</option>
+              <option value="usbong">Usbong, edad 4-7</option>
+              <option value="puno">Puno, edad 8-12</option>
             </select>
           </label>
           <p v-if="formError" class="error" role="alert">{{ formError }}</p>
           <button class="play lift" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : form.id ? 'Save changes' : 'Create child' }}
+            {{ saving ? 'Sini-save...' : form.id ? 'I-save ang pagbabago' : 'Gumawa ng profile' }}
           </button>
         </form>
       </section>
 
+      <p v-if="listError" class="error" role="alert">{{ listError }}</p>
+
+      <!-- One chain, one visible state. These four used to be broken apart by
+           error paragraphs, which left the empty state rendering underneath a
+           full list of children. -->
       <p v-if="loadError" class="error" role="alert">
-        Could not load linked profiles. Please refresh and try again.
+        Hindi ma-load ang mga naka-link na profile. Pakisubukang mag-refresh.
       </p>
 
-      <section v-else-if="pending" class="chunk state">
-        Loading family profiles...
-      </section>
+      <section v-else-if="pending" class="chunk state">Naglo-load...</section>
 
       <section v-else-if="profiles.length" class="profiles">
         <article v-for="child in profiles" :key="child.id" class="chunk child-card">
           <div class="child-head">
-            <div class="child-avatar" aria-hidden="true">{{ child.avatar.buddy }}</div>
+            <span class="child-avatar">
+              <BuddyAvatar :name="safeBuddy(child.avatar.buddy)" :size="54" />
+            </span>
             <div>
-              <p class="say">Child profile</p>
+              <p class="say">Profile ng bata</p>
               <h2 class="child-name">{{ child.displayName }}</h2>
-              <p class="child-meta">{{ languageName(child.activeLang) }} · {{ child.band }}</p>
+              <p class="child-meta">
+                {{ languageName(child.activeLang) }} &middot; {{ bandName(child.band) }}
+              </p>
             </div>
             <div class="child-actions">
               <button
@@ -282,15 +340,21 @@ useHead({ title: 'Magulang - Bibo Wika' })
                 :disabled="activatingId === child.id"
                 @click="useProfileAccount(child)"
               >
-                {{ activatingId === child.id ? 'Opening...' : selectedId === child.id ? 'Using account' : 'Use account' }}
+                {{
+                  activatingId === child.id
+                    ? 'Binubuksan...'
+                    : selectedId === child.id
+                      ? 'Ginagamit'
+                      : 'Gamitin'
+                }}
               </button>
-              <button class="small-action" @click="openEdit(child)">Edit</button>
+              <button class="small-action" @click="openEdit(child)">Baguhin</button>
               <button
                 class="small-action danger"
                 :disabled="deletingId === child.id"
                 @click="deleteProfile(child)"
               >
-                {{ deletingId === child.id ? 'Deleting...' : 'Delete' }}
+                {{ deletingId === child.id ? 'Binubura...' : 'Burahin' }}
               </button>
             </div>
           </div>
@@ -302,39 +366,52 @@ useHead({ title: 'Magulang - Bibo Wika' })
             </div>
             <div class="tile">
               <span class="tile-n">{{ child.stats.practiced }}</span>
-              <span class="tile-l">Words practiced</span>
+              <span class="tile-l">Nasanay</span>
             </div>
             <div class="tile">
               <span class="tile-n">{{ child.stats.mastered }}</span>
-              <span class="tile-l">Mastered</span>
+              <span class="tile-l">Kabisado</span>
             </div>
             <div class="tile">
               <span class="tile-n">{{ child.stats.due }}</span>
-              <span class="tile-l">Ready to review</span>
+              <span class="tile-l">Balikan</span>
             </div>
           </div>
         </article>
       </section>
 
-      <p v-if="formError && profiles.length" class="error" role="alert">{{ formError }}</p>
-      <p v-if="activationError" class="error" role="alert">{{ activationError }}</p>
-
       <section v-else class="chunk empty">
-        <p class="say">No linked profiles yet</p>
-        <h2 class="child-name">Bring this device's progress here.</h2>
+        <p class="say">Wala pang naka-link</p>
+        <h2 class="child-name">Dalhin dito ang progreso ng device na ito.</h2>
         <p class="quiet">
-          Start a child profile in the play app, then link it here. The child keeps playing locally;
-          this account only adds backup and parent visibility.
+          Magsimula ng profile sa app ng bata, tapos i-link ito dito. Patuloy pa ring maglalaro
+          ang bata nang lokal; nagdaragdag lang ito ng backup at pagtingin para sa magulang.
         </p>
-        <p v-if="linked" class="success" role="status">Profile linked. Progress will appear here.</p>
+
+        <label class="field">
+          <span>Pangalan ng bata</span>
+          <input
+            v-model.trim="linkName"
+            type="text"
+            minlength="2"
+            maxlength="80"
+            placeholder="Halimbawa: Maria"
+          />
+        </label>
+
+        <p v-if="linked" class="success" role="status">
+          Na-link na. Lalabas dito ang progreso.
+        </p>
         <p v-if="linkError" class="error" role="alert">{{ linkError }}</p>
         <button class="play lift" :disabled="linking" @click="linkCurrentProfile">
-          {{ linking ? 'Linking...' : 'Link this device profile' }}
+          {{ linking ? 'Nili-link...' : 'I-link ang profile sa device na ito' }}
         </button>
-        <NuxtLink to="/laro" class="child-link">Open child app</NuxtLink>
+        <NuxtLink to="/laro" class="child-link">Buksan ang app ng bata</NuxtLink>
       </section>
 
-      <NuxtLink v-if="profiles.length" to="/laro" class="play lift">Open child app</NuxtLink>
+      <NuxtLink v-if="profiles.length" to="/laro" class="play lift">
+        Buksan ang app ng bata
+      </NuxtLink>
     </main>
   </div>
 </template>
@@ -490,18 +567,14 @@ useHead({ title: 'Magulang - Bibo Wika' })
   margin-left: auto;
 }
 
+/* Holds a BuddyAvatar now, not the raw buddy id as text. The buddy carries
+   its own outline and colour, so this is only a box to sit in. */
 .child-avatar {
   display: grid;
+  flex: none;
+  place-items: center;
   width: 58px;
   height: 58px;
-  place-items: center;
-  border: var(--edge) solid var(--linya);
-  border-radius: 50%;
-  background: var(--mangga);
-  font-family: var(--display);
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
 }
 
 .child-name {

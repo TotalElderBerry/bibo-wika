@@ -2,11 +2,13 @@
 
 A child-friendly app for learning **Tagalog, Cebuano, Ilocano and Hiligaynon**, for ages 4–12.
 
-This repository is the **Phase 0 vertical slice**: one topic taken all the way through all four
-languages, playable in two exercise types, with the infrastructure standing end to end. It exists to
-prove three things before Phase 1 scales them — that the concept-keyed content model survives four
-languages, that the four-column authoring pipeline works, and that a language lead can review a
-lesson from a preview URL.
+This repository holds the **full Usbong curriculum draft**: six topics, 48 concepts, each one
+authored in all four languages, playable in two exercise types, with the infrastructure standing end
+to end. It started as a one-topic vertical slice and now carries the whole first band.
+
+**Every form is still `status: 'pending'`.** The words are drafted, not approved: no clip has been
+recorded and no native reviewer has signed off. Read *Audio* and *Content review* below before
+putting any of this in front of a child.
 
 ---
 
@@ -79,7 +81,16 @@ Import the repo; Vercel detects Nitro and wires it up. Then:
 ```
 content/            Authored source of truth. A curriculum lead edits these in a PR.
   types.ts            The concept model - read this first.
-  hayop.ts            Phase 0 topic: 8 concepts x 4 languages.
+  topics.ts           The registry, in teaching order. Every consumer reads this.
+  hayop.ts            Animals    - 8 concepts x 4 languages.
+  pagkain.ts          Food       - 8 concepts x 4 languages.
+  kulay.ts            Colours    - 8 concepts x 4 languages.
+  bilang.ts           Numbers    - 8 concepts x 4 languages.
+  pamilya.ts          Family     - 8 concepts x 4 languages.
+  pagbati.ts          Greetings  - 8 concepts x 4 languages, and the only
+                      topic made of phrases rather than single words.
+  roadmap.ts          Announced but not authored. Empty - all five planned
+                      topics have been written.
 server/
   db/schema.ts        The same model as Postgres (Drizzle).
   utils/db.ts         Neon over HTTP - no TCP pool to exhaust.
@@ -89,7 +100,7 @@ server/
 app/
   assets/css/main.css The visual system. Sticker book: thick ink outlines, hard
                       offset shadows, flat bright fills, day and night grounds.
-  components/         BuddyAvatar, AnimalArt, TapCard, BiboButton, ProgressPips, StarBurst.
+  components/         BuddyAvatar, ConceptArt, TapCard, BiboButton, ProgressPips, StarBurst.
   pages/              index   landing page - the only screen written for an
                               adult. Prerendered, Taglish, and driven by the
                               real content files rather than screenshots.
@@ -165,9 +176,11 @@ workflow moves forms to `recorded` and stops there, on purpose.
 **Done**
 
 - Concept-keyed content model, four languages, in TypeScript and in Postgres
-- Hayop topic: 8 concepts × 4 languages, with regional variants recorded
+- Six topics — hayop, pagkain, kulay, bilang, pamilya, pagbati — 48 concepts × 4 languages,
+  **drafted and unreviewed**, with regional variants and registers recorded
 - Two exercise types: *Pakinggan at Pindutin* (listen and tap) and *Tugma* (match)
-- Home hub — progress tiles, continue card, topic map with locked topics visible
+- Home hub — progress tiles, per-topic progress and stars, a continue card that points at the
+  first unfinished topic, and the locked-topic row kept for whatever is announced next
 - Landing page at `/`, prerendered and Taglish, with a live Salita Sabayan demo driven by the
   real content files. States the Phase 0 audio gap on the page rather than hiding it.
 - *Salita Sabayan* — one concept in all four languages, as a browsable screen and
@@ -183,7 +196,7 @@ workflow moves forms to `recorded` and stops there, on purpose.
 
 **Not in Phase 0** — deliberately
 
-- No recorded audio. Every form is `status: 'pending'`.
+- No recorded audio, and no reviewed text. Every form is `status: 'pending'`.
 - No Puno (8–12) mode, no reading or spelling exercises
 - Cross-device profile pairing, background sync, password recovery, and a Parent Gate are not built
 - No admin CMS UI — the API routes exist, the screens do not
@@ -191,6 +204,48 @@ workflow moves forms to `recorded` and stops there, on purpose.
 - No PWA icons yet: `public/icons/*` need to be generated before install works properly
 
 ---
+
+## Content review — read before shipping any of this
+
+The six topics were drafted in one pass. Tagalog and Cebuano are the most reliable; Ilocano and
+Hiligaynon need the closest reading. Each language needs a native reviewer to walk every form before
+it goes near the recording booth, and these specific calls are the ones to argue with first:
+
+| Where | The call that was made | Why it needs a second pair of eyes |
+| --- | --- | --- |
+| `colour.orange` | `kahel` in all four, with `orange` as an accepted variant | The weakest entry in the set. `kahel` is the fruit in Tagalog and may not be the everyday colour word in any of the other three; `orange` may simply be the honest answer everywhere. |
+| `food.banana` (ilo) | `saba` | `saba` is a specific cultivar in several languages, not the generic fruit. If Ilocano uses `saging` generically, swap them and keep `saba` as the variant. |
+| `greeting.youre_welcome` | `walang anuman` / `walay sapayan` / `awan ti anyaman` / `wala sing ano-ano` | Long, formal, and four different constructions. Check that each is what a child actually hears, not what a phrasebook prints. |
+| `family.baby` | `sanggol` / `masuso` / `maladaga` / `lapsag` | Four unrelated words, each plausible; the register differences between them are the risk. |
+| `family.mother`, `family.father` | spoken form taught, formal form as a variant | Deliberate: `nanay` over `ina`. Confirm that is right for Ilocano `nanang` and Hiligaynon `iloy` too. |
+| `colour.yellow` (ceb, hil) | `dalag` taught, `amarilyo` as variant | Which one wins is a household-by-household question, not a regional one. |
+| Every `respell` | Stress marked in caps | Stress was assigned by ear from the standard form. It is the single most likely thing to be wrong, and it is what a child will imitate. |
+| Every `ipa` | Omitted on multi-word greetings | Deliberate — phrase-level transcription invites false precision. Decide phrasing at the microphone. |
+
+Nothing above blocks the app from running; all of it blocks a recording session.
+
+## Parent accounts
+
+`/magulang` is the one part of the app that **cannot run without a database**. Everything a child
+touches works from the authored content files; a parent account needs somewhere to keep a profile,
+so with no `NUXT_DATABASE_URL` the login form answers "kailangan ng database" and stops there.
+
+What the account does and does not own:
+
+- **The dashboard owns the child's name, buddy, language and band.** Linking a device again will not
+  overwrite them - a device has no name to send, and re-linking used to file the child under their
+  buddy's name.
+- **Linking merges progress upward.** A Leitner box only ever moves up and `seen` is never reset, so
+  linking an old phone cannot demote what a newer device has already taught.
+- **The buddy is a closed set**, enforced on the server against the same six in
+  `app/utils/buddies.ts`. A buddy outside the roster is one the child app cannot draw.
+- **A profile row is claimed by id.** `profiles.parent_id` is `ON DELETE SET NULL`, so a family that
+  closes an account and opens a new one can re-link the profile still on their device. A row already
+  owned by a different account is refused.
+
+Still not built, and still listed under Phase 0 scope: password recovery, cross-device pairing,
+background sync, and a Parent Gate. There is no rate limit on the login endpoint - put one in front
+of it before a public beta.
 
 ## Known gaps
 

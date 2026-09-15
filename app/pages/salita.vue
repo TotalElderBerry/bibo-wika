@@ -96,7 +96,7 @@ useHead({ title: 'Salita Sabayan' })
           :class="{ on: selected === c.id }"
           @click="pick(c.id)"
         >
-          <AnimalArt :art="c.art" :size="44" />
+          <ConceptArt :art="c.art" :size="44" />
           <span class="chip-en">{{ c.en }}</span>
         </button>
       </div>
@@ -104,7 +104,7 @@ useHead({ title: 'Salita Sabayan' })
       <!-- detail -->
       <div v-if="detail" class="card chunk">
         <div class="card-head">
-          <AnimalArt :art="detail.art" :size="66" />
+          <ConceptArt :art="detail.art" :size="66" />
           <div>
             <p class="say">Ingles</p>
             <p class="card-en">{{ detail.en }}</p>

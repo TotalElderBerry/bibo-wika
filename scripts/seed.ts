@@ -10,7 +10,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
-import { topics as contentTopics } from '../content/hayop'
+import { topics as contentTopics } from '../content/topics'
 import { LANGS } from '../content/types'
 import * as schema from '../server/db/schema'
 

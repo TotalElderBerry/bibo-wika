@@ -1,4 +1,4 @@
-import { and, eq, gt } from 'drizzle-orm'
+import { and, eq, gt, lt } from 'drizzle-orm'
 import { randomBytes, randomUUID, scrypt as scryptCb, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import type { H3Event } from 'h3'
@@ -46,8 +46,27 @@ export async function verifyPassword(password: string, encoded: string) {
   if (method !== 'scrypt' || !salt || !hash) return false
 
   const expected = Buffer.from(hash, 'base64url')
-  const actual = (await scrypt(`${password}${cfgPepper()}`, salt, expected.length)) as Buffer
-  return actual.length === expected.length && timingSafeEqual(actual, expected)
+  // scrypt throws on keylen 0, which would turn a corrupt stored hash into a
+  // 500 on login rather than a refused password. A hash we cannot parse is a
+  // failed verification, not a server error.
+  if (expected.length !== KEY_BYTES) return false
+
+  const actual = (await scrypt(`${password}${cfgPepper()}`, salt, KEY_BYTES)) as Buffer
+  return timingSafeEqual(actual, expected)
+}
+
+/**
+ * Spend the same time on a login for an address with no account.
+ *
+ * Without this, an unknown email returns before any scrypt work happens and a
+ * known one does not - a timing oracle for "does this family have an account
+ * here", which is exactly the kind of thing not to leak about children.
+ */
+let decoy: Promise<string> | null = null
+
+export async function burnPasswordTime(password: string) {
+  decoy ??= hashPassword(randomUUID())
+  await verifyPassword(password, await decoy)
 }
 
 export function sessionExpiry() {
@@ -65,7 +84,15 @@ export function setSessionCookie(event: H3Event, sessionId: string, expires: Dat
 }
 
 export function clearSessionCookie(event: H3Event) {
-  deleteCookie(event, COOKIE, { path: '/' })
+  // Same attributes as setSessionCookie. A delete whose flags do not match the
+  // cookie that was set is ignored by some browsers, which logs a parent out
+  // of the UI while leaving a live session cookie on the device.
+  deleteCookie(event, COOKIE, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  })
 }
 
 export async function createParentSession(event: H3Event, parentId: string) {
@@ -74,6 +101,17 @@ export async function createParentSession(event: H3Event, parentId: string) {
   const expiresAt = sessionExpiry()
 
   await db.insert(schema.parentSessions).values({ id, parentId, expiresAt })
+
+  // Rows here are never read again once they lapse, and a parent who signs in
+  // from a new device every week accumulates them forever. Clearing this
+  // account's dead sessions on the way in keeps the table proportional to
+  // devices in use rather than to logins ever made.
+  await db
+    .delete(schema.parentSessions)
+    .where(
+      and(eq(schema.parentSessions.parentId, parentId), lt(schema.parentSessions.expiresAt, new Date())),
+    )
+
   setSessionCookie(event, id, expiresAt)
 
   return id
@@ -108,7 +146,7 @@ export async function getCurrentParent(event: H3Event) {
 export async function requireParent(event: H3Event) {
   const parent = await getCurrentParent(event)
   if (!parent) {
-    throw createError({ statusCode: 401, statusMessage: 'Parent login required' })
+    throw createError({ statusCode: 401, statusMessage: 'Kailangan ng login ng magulang' })
   }
   return parent
 }

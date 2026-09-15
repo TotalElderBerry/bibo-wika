@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { LANGS } from '~~/content/types'
-import { topics as localTopics } from '~~/content/hayop'
+import { topics as localTopics } from '~~/content/topics'
 
 /**
  * Salita Sabayan - one concept in all four languages at once.

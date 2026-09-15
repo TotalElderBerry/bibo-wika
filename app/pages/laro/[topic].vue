@@ -299,7 +299,7 @@ useHead({ title: () => topic.value?.title ?? 'Bibo Wika' })
 
       <div v-if="compare" class="chunk pad sabayan rise">
         <div class="row">
-          <AnimalArt :art="compare.art" :size="52" />
+          <ConceptArt :art="compare.art" :size="52" />
           <div>
             <p class="say">Salita Sabayan</p>
             <p class="heading">{{ compare.en }}</p>
@@ -415,7 +415,7 @@ useHead({ title: () => topic.value?.title ?? 'Bibo Wika' })
               @click="tapPicture(p)"
             >
               <span v-if="selWord && !matched.has(p.id)" class="key slot-key" aria-hidden="true">{{ n + 1 }}</span>
-              <AnimalArt :art="p.art" :size="54" />
+              <ConceptArt :art="p.art" :size="54" />
             </button>
           </div>
         </div>

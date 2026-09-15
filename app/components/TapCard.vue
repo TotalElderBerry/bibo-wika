@@ -28,7 +28,7 @@ withDefaults(
   >
     <span v-if="hint" class="key hint" aria-hidden="true">{{ hint }}</span>
     <span class="pic" :class="{ 'is-pop': state === 'correct', 'is-wobble': state === 'wrong' }">
-      <AnimalArt :art="art" :size="76" />
+      <ConceptArt :art="art" :size="76" />
     </span>
     <span class="label">{{ word }}</span>
 

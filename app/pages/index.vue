@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { LANGS, LANG_META } from '~~/content/types'
-import { hayop } from '~~/content/hayop'
+import { topics } from '~~/content/topics'
 import { upcoming } from '~~/content/roadmap'
 import { BUDDIES } from '~/utils/buddies'
 
@@ -14,8 +14,8 @@ import { BUDDIES } from '~/utils/buddies'
  *
  * It is prerendered to a static file, so everything it shows has to come from
  * `content/` rather than an API call. That is deliberate beyond build config:
- * the Salita Sabayan demo below is driven by the real Phase 0 topic, not a
- * screenshot of it, so this page cannot quietly drift away from the product
+ * the Salita Sabayan demo below is driven by the real content files, not a
+ * screenshot of them, so this page cannot quietly drift away from the product
  * the way a marketing page usually does.
  *
  * Copy is Taglish. The audience is Filipino parents and teachers, plus adults
@@ -24,9 +24,30 @@ import { BUDDIES } from '~/utils/buddies'
 const profile = useProfile()
 const ground = useGround()
 
-/** Live Salita Sabayan demo, driven by the actual Phase 0 topic. */
+/**
+ * Live Salita Sabayan demo, driven by the actual content files.
+ *
+ * One or two concepts per topic, picked for how far the four languages move
+ * apart - `kapatid / igsoon / kabsat / utod` sells this product better than
+ * any sentence on this page can. `animal.bird` is first because the langgam
+ * trap explained below depends on it.
+ */
+const DEMO_IDS = [
+  'animal.bird',
+  'animal.dog',
+  'food.rice',
+  'food.water',
+  'colour.yellow',
+  'number.three',
+  'family.sibling',
+  'greeting.good_morning',
+]
+
+const allConcepts = topics.flatMap((t) => t.concepts)
+const demo = DEMO_IDS.map((id) => allConcepts.find((c) => c.id === id)).filter((c) => !!c)
+
 const pick = ref(0)
-const concept = computed(() => hayop.concepts[pick.value]!)
+const concept = computed(() => demo[pick.value]!)
 
 const buddies = BUDDIES
 
@@ -102,17 +123,17 @@ useSeoMeta({
           <div class="hero-art" aria-hidden="true">
             <div class="card-stack">
               <div class="peek chunk tilt-l">
-                <AnimalArt art="butterfly" :size="56" />
+                <ConceptArt art="butterfly" :size="56" />
                 <span class="peek-w">paruparo</span>
                 <span class="wika-chip w-tl">TL</span>
               </div>
               <div class="peek chunk tilt-r">
-                <AnimalArt art="carabao" :size="56" />
+                <ConceptArt art="carabao" :size="56" />
                 <span class="peek-w">nuang</span>
                 <span class="wika-chip w-ilo">ILO</span>
               </div>
               <div class="peek chunk tilt-l">
-                <AnimalArt art="cat" :size="56" />
+                <ConceptArt art="cat" :size="56" />
                 <span class="peek-w">kuring</span>
                 <span class="wika-chip w-hil">HIL</span>
               </div>
@@ -133,8 +154,9 @@ useSeoMeta({
         <div class="wrap note-in">
           <span class="note-tag">Maagang bersyon</span>
           <p>
-            Isang topic pa lang ang bukas - <strong>Mga Hayop</strong>, walong salita sa apat na
-            wika. Ineere-record pa ng mga native speaker ang mga boses, kaya wala pang tunog ang
+            Bukas na ang <strong>anim na aralin</strong> - 48 salita sa apat na wika, mula
+            hayop hanggang pagbati. Ineere-record pa ng mga native speaker ang mga boses, at
+            hinihintay pa ang pag-apruba ng mga tagasuri sa bawat wika, kaya wala pang tunog ang
             mga salita. Ang natitira sa app ay totoo at nalalaro na ngayon.
           </p>
         </div>
@@ -169,28 +191,28 @@ useSeoMeta({
           <p class="kicker">Ang kaibahan namin</p>
           <h2 class="h-lg">Salita Sabayan</h2>
           <p class="sub">
-            Isang konsepto, apat na wika, magkatabi. Pindutin ang hayop - ito mismo ang nilalaman
+            Isang konsepto, apat na wika, magkatabi. Pindutin ang larawan - ito mismo ang nilalaman
             ng app, hindi larawan nito.
           </p>
 
           <div class="demo">
             <div class="demo-pick" role="group" aria-label="Pumili ng salita">
               <button
-                v-for="(c, i) in hayop.concepts"
+                v-for="(c, i) in demo"
                 :key="c.id"
                 class="chip-art lift"
                 :class="{ on: i === pick }"
                 :aria-pressed="i === pick"
                 @click="pick = i"
               >
-                <AnimalArt :art="c.art" :size="34" />
+                <ConceptArt :art="c.art" :size="34" />
                 <span class="chip-en">{{ c.en }}</span>
               </button>
             </div>
 
             <div class="demo-panel chunk">
               <div class="demo-head">
-                <AnimalArt :art="concept.art" :size="76" />
+                <ConceptArt :art="concept.art" :size="76" />
                 <div>
                   <p class="say">Konsepto</p>
                   <h3 class="demo-en">{{ concept.en }}</h3>
@@ -358,17 +380,24 @@ useSeoMeta({
       <!-- ======================================================= susunod -->
       <section class="sec sec-alt">
         <div class="wrap">
-          <p class="kicker">Ano ang susunod</p>
-          <h2 class="h-lg">Mga paparating na aralin</h2>
+          <p class="kicker">Ang kurikulum</p>
+          <h2 class="h-lg">Anim na aralin, bukas lahat</h2>
           <p class="sub">
-            Bukas na ngayon ang <strong>Mga Hayop</strong>. Ito ang mga susunod, sa apat na wika
-            din.
+            Walang naka-lock. Bawat aralin ay walong konsepto, at bawat konsepto ay nasa apat na
+            wika - kaya 48 salita bawat wika, 192 lahat.
           </p>
 
           <div class="soon">
-            <span v-for="u in upcoming" :key="u.slug" class="chunk soon-chip">
+            <span v-for="t in topics" :key="t.slug" class="chunk soon-chip">
+              <strong>{{ t.title.tl }}</strong>
+              <span class="soon-en">{{ t.en }}</span>
+            </span>
+          </div>
+
+          <div v-if="upcoming.length" class="soon">
+            <span v-for="u in upcoming" :key="u.slug" class="chunk soon-chip soon-next">
               <strong>{{ u.title.tl }}</strong>
-              <span class="soon-en">{{ u.en }}</span>
+              <span class="soon-en">Malapit na</span>
             </span>
           </div>
         </div>
@@ -1122,6 +1151,11 @@ useSeoMeta({
   display: flex;
   flex-direction: column;
   padding: 10px 16px;
+}
+
+/* Announced but not authored yet - dashed and dimmed, the same signal the
+   child app uses for a locked topic. Nothing wears this today. */
+.soon-next {
   background: transparent;
   border-style: dashed;
   border-width: 2.5px;

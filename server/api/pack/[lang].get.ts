@@ -1,6 +1,6 @@
 import { asc, eq } from 'drizzle-orm'
 import { LANGS, type Lang } from '~~/content/types'
-import { topics as localTopics } from '~~/content/hayop'
+import { topics as localTopics } from '~~/content/topics'
 
 /**
  * A language pack: everything the child app needs for one language, as one

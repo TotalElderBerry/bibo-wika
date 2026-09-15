@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LANG_META } from '~~/content/types'
 import { upcoming } from '~~/content/roadmap'
-import type { Pack } from '~/composables/usePack'
+import type { Pack, PackTopic } from '~/composables/usePack'
 
 /**
  * The hub - `/laro`, the child app's home, and the PWA `start_url`.
@@ -32,7 +32,7 @@ onMounted(async () => {
   booting.value = false
 })
 
-const topic = computed(() => pack.value?.topics[0] ?? null)
+const topics = computed(() => pack.value?.topics ?? [])
 
 /** Mastery is per concept PER LANGUAGE, so these counts are for the active wika. */
 const stats = computed(() => {
@@ -45,19 +45,33 @@ const stats = computed(() => {
   }
 })
 
-const progress = computed(() => {
-  const t = topic.value
+/**
+ * Per-topic progress, counted in the active language. A concept is "started"
+ * once it has a Leitner box above zero - which is what the pips on the tile
+ * show. Mastery (box 4) is counted separately, in `stats`.
+ */
+function progressOf(t: PackTopic) {
   const lang = profile.lang
-  if (!t || !lang) return { done: 0, total: 0, pct: 0 }
+  const total = t.concepts.length
+  if (!lang || !total) return { done: 0, total, pct: 0 }
   const done = t.concepts.filter((c) => (profile.boxes[`${c.id}:${lang}`] ?? 0) > 0).length
-  return { done, total: t.concepts.length, pct: t.concepts.length ? done / t.concepts.length : 0 }
-})
+  return { done, total, pct: done / total }
+}
 
-const topicStars = computed(() => {
-  const p = progress.value
-  if (!p.total) return 0
-  return p.pct >= 1 ? 3 : p.pct >= 0.6 ? 2 : p.pct > 0 ? 1 : 0
-})
+function starsOf(t: PackTopic) {
+  const { pct, total } = progressOf(t)
+  if (!total) return 0
+  return pct >= 1 ? 3 : pct >= 0.6 ? 2 : pct > 0 ? 1 : 0
+}
+
+/**
+ * The continue card points at the first topic that is not finished, so a child
+ * who has cleared Hayop is offered Pagkain rather than the topic they already
+ * know. Nothing is locked behind anything: the list below is all playable, and
+ * this is a suggestion, not a gate.
+ */
+const active = computed(() => topics.value.find((t) => progressOf(t).pct < 1) ?? topics.value[0] ?? null)
+const progress = computed(() => (active.value ? progressOf(active.value) : { done: 0, total: 0, pct: 0 }))
 
 useHead({ title: 'Bibo Wika' })
 </script>
@@ -124,14 +138,14 @@ useHead({ title: 'Bibo Wika' })
             </div>
           </div>
 
-          <div v-if="topic" class="cont chunk">
+          <div v-if="active" class="cont chunk">
             <p class="say">{{ progress.done ? 'Magpatuloy' : 'Simulan' }}</p>
-            <h2 class="heading">{{ topic.title }}</h2>
+            <h2 class="heading">{{ active.title }}</h2>
             <div class="cont-row">
               <ProgressPips :total="progress.total" :done="progress.done" />
               <span class="cont-count">{{ progress.done }}/{{ progress.total }}</span>
             </div>
-            <BiboButton tone="dahon" @click="navigateTo(`/laro/${topic.slug}`)">
+            <BiboButton tone="dahon" @click="navigateTo(`/laro/${active.slug}`)">
               Maglaro
             </BiboButton>
           </div>
@@ -141,16 +155,18 @@ useHead({ title: 'Bibo Wika' })
           <h3 class="sec">Mga Aralin</h3>
           <div class="list">
             <button
-              v-if="topic"
+              v-for="t in topics"
+              :key="t.slug"
               class="topic lift"
-              @click="navigateTo(`/laro/${topic.slug}`)"
+              :class="{ 'topic-now': active && t.slug === active.slug }"
+              @click="navigateTo(`/laro/${t.slug}`)"
             >
-              <span class="topic-art"><AnimalArt :art="topic.art" :size="42" /></span>
+              <span class="topic-art"><ConceptArt :art="t.art" :size="42" /></span>
               <span class="topic-txt">
-                <span class="topic-nm">{{ topic.title }}</span>
-                <span class="topic-sub">{{ progress.done }} / {{ progress.total }} salita</span>
+                <span class="topic-nm">{{ t.title }}</span>
+                <span class="topic-sub">{{ progressOf(t).done }} / {{ progressOf(t).total }} salita</span>
               </span>
-              <span class="topic-stars">{{ '★'.repeat(topicStars) }}{{ '☆'.repeat(3 - topicStars) }}</span>
+              <span class="topic-stars">{{ '★'.repeat(starsOf(t)) }}{{ '☆'.repeat(3 - starsOf(t)) }}</span>
             </button>
 
             <div v-for="u in upcoming" :key="u.slug" class="topic locked">
@@ -452,6 +468,13 @@ useHead({ title: 'Bibo Wika' })
   box-shadow: none;
   border-style: dashed;
   color: var(--tinta-2);
+}
+
+/* The topic the continue card is offering. Marked, never singled out by
+   dimming the others - every topic in this list is playable. */
+.topic-now {
+  background: var(--papel-2);
+  box-shadow: 0 4px 0 var(--lift), inset 0 0 0 2px var(--dahon);
 }
 
 .topic-art {

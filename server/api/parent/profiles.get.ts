@@ -2,7 +2,7 @@ import { eq, inArray, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   if (!hasDb()) {
-    throw createError({ statusCode: 503, statusMessage: 'Database is required for parent profiles' })
+    throw createError({ statusCode: 503, statusMessage: 'Kailangan ng database para sa mga profile ng bata' })
   }
 
   const parent = await requireParent(event)

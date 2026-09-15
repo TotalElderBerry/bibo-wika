@@ -9,6 +9,15 @@ import type { Lang } from './types'
  *
  * Nothing here is playable and nothing here claims to be. The moment a topic
  * gets a real content file it moves out of this list and into `topics`.
+ *
+ * The list is EMPTY right now, and that is the correct state rather than an
+ * oversight: the five topics that used to sit here - pagkain, pamilya, kulay,
+ * bilang and pagbati - have all been authored and now live in
+ * `content/topics.ts`. Every screen that renders this list hides its section
+ * when the list is empty, so nothing shows an empty "coming soon" shelf.
+ *
+ * Adding the next one is: put it here to announce it, author
+ * `content/<slug>.ts`, then move it into the registry.
  */
 export interface UpcomingTopic {
   slug: string
@@ -16,30 +25,4 @@ export interface UpcomingTopic {
   title: Record<Lang, string>
 }
 
-export const upcoming: UpcomingTopic[] = [
-  {
-    slug: 'pagkain',
-    en: 'Food',
-    title: { tl: 'Pagkain', ceb: 'Pagkaon', ilo: 'Taraon', hil: 'Pagkaon' },
-  },
-  {
-    slug: 'pamilya',
-    en: 'Family',
-    title: { tl: 'Pamilya', ceb: 'Pamilya', ilo: 'Pamilia', hil: 'Pamilya' },
-  },
-  {
-    slug: 'kulay',
-    en: 'Colours',
-    title: { tl: 'Mga Kulay', ceb: 'Mga Kolor', ilo: 'Dagiti Maris', hil: 'Mga Kolor' },
-  },
-  {
-    slug: 'bilang',
-    en: 'Numbers',
-    title: { tl: 'Mga Bilang', ceb: 'Mga Numero', ilo: 'Dagiti Numero', hil: 'Mga Numero' },
-  },
-  {
-    slug: 'pagbati',
-    en: 'Greetings',
-    title: { tl: 'Pagbati', ceb: 'Pagtimbaya', ilo: 'Kablaaw', hil: 'Pagtamyaw' },
-  },
-]
+export const upcoming: UpcomingTopic[] = []

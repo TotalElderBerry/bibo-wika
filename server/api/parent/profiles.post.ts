@@ -1,8 +1,5 @@
 import { randomUUID } from 'node:crypto'
 
-const LANGS = new Set(['tl', 'ceb', 'ilo', 'hil'])
-const BANDS = new Set(['usbong', 'puno'])
-
 interface CreateProfileBody {
   displayName?: string
   buddy?: string
@@ -12,27 +9,35 @@ interface CreateProfileBody {
 
 export default defineEventHandler(async (event) => {
   if (!hasDb()) {
-    throw createError({ statusCode: 503, statusMessage: 'Database is required for child profiles' })
+    throw createError({
+      statusCode: 503,
+      statusMessage: 'Kailangan ng database para sa mga profile ng bata',
+    })
   }
 
   const parent = await requireParent(event)
   const body = await readBody<CreateProfileBody>(event)
-  const displayName = body?.displayName?.trim() ?? ''
-  const buddy = body?.buddy?.trim() ?? 'bibo'
+  const displayName = cleanChildName(body?.displayName)
+  const buddy = body?.buddy?.trim() ?? ''
   const lang = body?.lang ?? 'tl'
   const band = body?.band ?? 'usbong'
 
-  if (displayName.length < 2 || displayName.length > 80) {
-    throw createError({ statusCode: 400, statusMessage: 'Child name must be 2 to 80 characters' })
+  if (!isChildName(displayName)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Dapat 2 hanggang 80 letra ang pangalan ng bata',
+    })
   }
-  if (!buddy || buddy.length > 40) {
-    throw createError({ statusCode: 400, statusMessage: 'A valid buddy is required' })
+  // Was: any string up to 40 characters. A buddy outside the roster is one the
+  // child app cannot draw, and it became Tikoy without telling anyone.
+  if (!isBuddy(buddy)) {
+    throw createError({ statusCode: 400, statusMessage: 'Pumili ng kaibigan mula sa listahan' })
   }
-  if (!LANGS.has(lang)) {
-    throw createError({ statusCode: 400, statusMessage: 'Unsupported language' })
+  if (!isLang(lang)) {
+    throw createError({ statusCode: 400, statusMessage: 'Hindi suportadong wika' })
   }
-  if (!BANDS.has(band)) {
-    throw createError({ statusCode: 400, statusMessage: 'Unsupported learning band' })
+  if (!isBand(band)) {
+    throw createError({ statusCode: 400, statusMessage: 'Hindi suportadong antas' })
   }
 
   const id = randomUUID()
@@ -40,9 +45,9 @@ export default defineEventHandler(async (event) => {
     id,
     parentId: parent.id,
     displayName,
-    band: band as 'usbong' | 'puno',
+    band,
     avatar: { buddy },
-    activeLang: lang as 'tl' | 'ceb' | 'ilo' | 'hil',
+    activeLang: lang,
   })
 
   return { profileId: id, created: true }

@@ -1,10 +1,11 @@
 import type { Topic } from './types'
 
 /**
- * PHASE 0 VERTICAL SLICE - topic 1 of 1.
+ * Animals - topic 1 of 6, and the first one written.
  *
- * Eight concepts taken all the way through all four languages. Chosen so the
- * slice exercises the whole range the content model has to survive:
+ * Eight concepts taken all the way through all four languages. This was the
+ * vertical slice the rest of the curriculum was built on, so its eight were
+ * chosen to exercise the whole range the content model has to survive:
  *
  *   - `animal.chicken`  identical in all four (manok)
  *   - `animal.bird`     four completely unrelated words
@@ -137,5 +138,3 @@ export const hayop: Topic = {
     },
   ],
 }
-
-export const topics = [hayop]

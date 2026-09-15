@@ -21,13 +21,13 @@ async function submit() {
     await auth.login(email.value, password.value)
     await navigateTo(nextPath.value)
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Login failed.'
+    error.value = err instanceof Error ? err.message : 'Hindi matuloy ang pag-sign in.'
   } finally {
     loading.value = false
   }
 }
 
-useHead({ title: 'Parent login - Bibo Wika' })
+useHead({ title: 'Login ng magulang - Bibo Wika' })
 </script>
 
 <template>
@@ -36,18 +36,18 @@ useHead({ title: 'Parent login - Bibo Wika' })
       <section class="intro">
         <NuxtLink to="/" class="mark">Bibo&nbsp;Wika</NuxtLink>
         <p class="kicker">Para sa magulang</p>
-        <h1 class="auth-title">Sign in to manage family learning.</h1>
+        <h1 class="auth-title">Mag-sign in para sa pamilya.</h1>
         <p class="auth-copy">
-          Kids can still play without logging in. This account is for adults who want sync,
-          settings, and future family controls.
+          Nakakapaglaro pa rin ang mga bata nang hindi nagla-log in. Para sa magulang ang account
+          na ito - progreso, settings, at mga kontrol ng pamilya.
         </p>
-        <NuxtLink to="/laro" class="back lift">Open child app</NuxtLink>
+        <NuxtLink to="/laro" class="back lift">Buksan ang app ng bata</NuxtLink>
       </section>
 
       <form class="auth-card chunk" @submit.prevent="submit">
         <div>
-          <p class="say">Welcome back</p>
-          <h2 class="heading">Parent login</h2>
+          <p class="say">Maligayang balik</p>
+          <h2 class="heading">Login ng magulang</h2>
         </div>
 
         <label class="field">
@@ -69,7 +69,7 @@ useHead({ title: 'Parent login - Bibo Wika' })
             v-model="password"
             autocomplete="current-password"
             name="password"
-            placeholder="Your password"
+            placeholder="Iyong password"
             type="password"
             required
           />
@@ -78,12 +78,12 @@ useHead({ title: 'Parent login - Bibo Wika' })
         <p v-if="error" class="error" role="alert">{{ error }}</p>
 
         <BiboButton type="submit" tone="dahon" :disabled="loading">
-          {{ loading ? 'Signing in...' : 'Sign in' }}
+          {{ loading ? 'Nagsa-sign in...' : 'Mag-sign in' }}
         </BiboButton>
 
         <p class="switch">
-          New here?
-          <NuxtLink to="/magulang/register">Create a parent account</NuxtLink>
+          Bago dito?
+          <NuxtLink to="/magulang/register">Gumawa ng account ng magulang</NuxtLink>
         </p>
       </form>
     </main>

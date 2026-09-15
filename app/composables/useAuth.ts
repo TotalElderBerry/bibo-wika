@@ -11,9 +11,9 @@ interface AuthResponse {
 function authErrorMessage(err: unknown) {
   if (typeof err === 'object' && err && 'data' in err) {
     const data = (err as { data?: { statusMessage?: string; message?: string } }).data
-    return data?.statusMessage || data?.message || 'Something went wrong.'
+    return data?.statusMessage || data?.message || 'May nangyaring mali.'
   }
-  return 'Something went wrong.'
+  return 'May nangyaring mali.'
 }
 
 export function useAuth() {
@@ -55,10 +55,16 @@ export function useAuth() {
   }
 
   async function logout() {
-    await $fetch('/api/auth/logout', { method: 'POST' })
-    parent.value = null
-    loaded.value = true
-    await navigateTo('/magulang/login')
+    // Clear local state even when the request fails. A network error here used
+    // to reject silently and leave a parent looking signed in on a screen they
+    // asked to leave; a redundant sign-out is the safer of the two failures.
+    try {
+      await $fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      parent.value = null
+      loaded.value = true
+      await navigateTo('/magulang/login')
+    }
   }
 
   return {
