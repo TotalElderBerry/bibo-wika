@@ -99,6 +99,7 @@ app/
                       wika    language picker
                       salita  Salita Sabayan browser - all four languages
                       laro/[topic]  the lesson
+                      magulang  parent login and linked-profile dashboard
   stores/profile.ts   Local-first. A child never logs in.
 scripts/seed.ts       content/ -> Neon.
 .github/workflows/    Audio transcode pipeline.
@@ -176,6 +177,7 @@ workflow moves forms to `recorded` and stops there, on purpose.
 - Phone / tablet / desktop layouts, with full keyboard play on wide screens
 - Local-first profile and Leitner box state in IndexedDB
 - Pack and compare endpoints, with a no-database fallback
+- Parent accounts, same-device profile linking, and a first progress dashboard
 - Presigned R2 upload path and the ffmpeg transcode workflow
 - Vercel config pinned to `sin1`; PWA manifest and offline caching
 
@@ -183,7 +185,7 @@ workflow moves forms to `recorded` and stops there, on purpose.
 
 - No recorded audio. Every form is `status: 'pending'`.
 - No Puno (8–12) mode, no reading or spelling exercises
-- No parent dashboard, no accounts, no Parent Gate
+- Cross-device profile pairing, background sync, password recovery, and a Parent Gate are not built
 - No admin CMS UI — the API routes exist, the screens do not
 - Avatar customisation axes (skin, hair, outfit, accessory) are specified but not built
 - No PWA icons yet: `public/icons/*` need to be generated before install works properly

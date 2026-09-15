@@ -75,6 +75,7 @@ export const forms = pgTable(
  */
 export const profiles = pgTable('profiles', {
   id: text('id').primaryKey(),
+  parentId: text('parent_id').references(() => parentAccounts.id, { onDelete: 'set null' }),
   displayName: text('display_name').notNull(),
   band: bandEnum('band').notNull().default('usbong'),
   /** { base, skin, hair, outfit, accessory } */
@@ -82,7 +83,7 @@ export const profiles = pgTable('profiles', {
   activeLang: langEnum('active_lang').notNull().default('tl'),
   xp: integer('xp').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (t) => [index('profiles_parent_idx').on(t.parentId)])
 
 /**
  * Leitner box state, per concept PER LANGUAGE. A child who learns `dog` in
