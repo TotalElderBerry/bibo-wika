@@ -578,6 +578,37 @@ useHead({ title: 'Magulang - Bibo Wika' })
 }
 
 @media (max-width: 520px) {
+  .parent-home {
+    gap: 14px;
+  }
+
+  .top {
+    align-items: stretch;
+  }
+
+  .brand,
+  .logout {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .hello,
+  .manage,
+  .child-card,
+  .empty,
+  .state {
+    padding: 16px;
+  }
+
+  .manage-head {
+    flex-direction: column;
+  }
+
+  .manage-head .small-action {
+    width: 100%;
+  }
+
   .profile-form {
     grid-template-columns: 1fr;
   }
@@ -593,7 +624,18 @@ useHead({ title: 'Magulang - Bibo Wika' })
 
   .child-actions {
     width: 100%;
-    margin-left: 70px;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .child-actions .use-action {
+    grid-column: 1 / -1;
+  }
+
+  .small-action {
+    min-width: 0;
+    padding-inline: 8px;
   }
 
   .grid {
@@ -602,6 +644,12 @@ useHead({ title: 'Magulang - Bibo Wika' })
 
   .play {
     width: 100%;
+  }
+
+  .child-link {
+    display: block;
+    margin: 14px 0 0;
+    text-align: center;
   }
 }
 </style>

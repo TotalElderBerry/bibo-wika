@@ -89,6 +89,7 @@ useSeoMeta({
             <div class="cta-row">
               <NuxtLink to="/pumili" class="cta cta-main lift">Magsimula</NuxtLink>
               <NuxtLink to="/salita" class="cta cta-alt lift">Tingnan ang Salita Sabayan</NuxtLink>
+              <NuxtLink to="/magulang/login" class="cta cta-parent lift">Para sa magulang</NuxtLink>
             </div>
 
             <p v-if="profile.started" class="cta-note">
@@ -604,6 +605,11 @@ useSeoMeta({
 .cta-alt {
   background: var(--papel);
   color: var(--tinta);
+}
+
+.cta-parent {
+  background: var(--dahon);
+  color: #fff;
 }
 
 /* On a phone the two buttons sit on their own rows anyway, so let them match
