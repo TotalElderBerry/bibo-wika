@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     // Server-only. Set in Vercel project env (and .env locally).
     databaseUrl: '',
     adminToken: '',
+    authPepper: '',
     r2: {
       accountId: '',
       bucket: '',
