@@ -74,6 +74,24 @@ export const useProfile = defineStore('profile', {
       await this.persist()
     },
 
+    async activateRemote(remote: {
+      id: string
+      avatar: Record<string, string>
+      activeLang: Lang
+      band: 'usbong' | 'puno'
+      xp: number
+    }, boxes: Record<string, number>) {
+      const buddy = remote.avatar.buddy
+      const validBuddies: BuddyName[] = ['tikoy', 'kalab', 'haribon', 'pawi', 'maya', 'sari']
+      this.id = remote.id
+      this.buddy = validBuddies.includes(buddy as BuddyName) ? (buddy as BuddyName) : 'tikoy'
+      this.lang = remote.activeLang
+      this.band = remote.band
+      this.xp = remote.xp
+      this.boxes = boxes
+      await this.persist()
+    },
+
     async award(xp: number) {
       this.xp += xp
       await this.persist()

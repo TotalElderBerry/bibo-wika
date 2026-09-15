@@ -36,7 +36,10 @@ const linked = ref(false)
 const formOpen = ref(false)
 const saving = ref(false)
 const deletingId = ref('')
+const activatingId = ref('')
+const selectedId = ref('')
 const formError = ref('')
+const activationError = ref('')
 const form = reactive({
   id: '',
   displayName: '',
@@ -46,6 +49,11 @@ const form = reactive({
 })
 
 const profiles = computed(() => data.value?.profiles ?? [])
+
+onMounted(async () => {
+  await profile.load()
+  selectedId.value = profile.id
+})
 
 function languageName(lang: string) {
   return LANGUAGE_LABELS[lang] ?? lang
@@ -161,6 +169,32 @@ async function linkCurrentProfile() {
   }
 }
 
+async function useProfileAccount(child: ProfileSummary) {
+  if (activatingId.value) return
+  activatingId.value = child.id
+  activationError.value = ''
+
+  try {
+    const result = await $fetch<{
+      profile: {
+        id: string
+        avatar: Record<string, string>
+        activeLang: 'tl' | 'ceb' | 'ilo' | 'hil'
+        band: 'usbong' | 'puno'
+        xp: number
+      }
+      boxes: Record<string, number>
+    }>(`/api/parent/profiles/${child.id}`)
+    await profile.activateRemote(result.profile, result.boxes)
+    selectedId.value = child.id
+    await navigateTo('/laro')
+  } catch (err) {
+    activationError.value = apiErrorMessage(err, 'Could not activate this child account.')
+  } finally {
+    activatingId.value = ''
+  }
+}
+
 useHead({ title: 'Magulang - Bibo Wika' })
 </script>
 
@@ -242,6 +276,14 @@ useHead({ title: 'Magulang - Bibo Wika' })
               <p class="child-meta">{{ languageName(child.activeLang) }} · {{ child.band }}</p>
             </div>
             <div class="child-actions">
+              <button
+                class="small-action use-action"
+                :class="{ selected: selectedId === child.id }"
+                :disabled="activatingId === child.id"
+                @click="useProfileAccount(child)"
+              >
+                {{ activatingId === child.id ? 'Opening...' : selectedId === child.id ? 'Using account' : 'Use account' }}
+              </button>
               <button class="small-action" @click="openEdit(child)">Edit</button>
               <button
                 class="small-action danger"
@@ -275,6 +317,7 @@ useHead({ title: 'Magulang - Bibo Wika' })
       </section>
 
       <p v-if="formError && profiles.length" class="error" role="alert">{{ formError }}</p>
+      <p v-if="activationError" class="error" role="alert">{{ activationError }}</p>
 
       <section v-else class="chunk empty">
         <p class="say">No linked profiles yet</p>

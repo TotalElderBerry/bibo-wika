@@ -73,7 +73,7 @@ withDefaults(
 }
 
 .bibo-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.78;
   box-shadow: 0 3px 0 var(--lift);
   cursor: default;
 }
