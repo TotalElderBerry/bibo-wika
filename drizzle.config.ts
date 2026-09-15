@@ -6,7 +6,7 @@ export default defineConfig({
   dialect: 'postgresql',
   dbCredentials: {
     // Use the POOLED (-pooler) Neon connection string.
-    url: process.env.DATABASE_URL!,
+    url: (process.env.DATABASE_URL ?? process.env.NUXT_DATABASE_URL)!,
   },
   verbose: true,
   strict: true,

@@ -8,6 +8,7 @@ import {
   smallint,
   text,
   timestamp,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
 /** Spec section 05, as Postgres. Adding Bicolano = adding one enum value. */
@@ -105,4 +106,34 @@ export const progress = pgTable(
     primaryKey({ columns: [t.profileId, t.conceptId, t.lang] }),
     index('progress_due_idx').on(t.profileId, t.dueAt),
   ],
+)
+
+/**
+ * Parent accounts. Children still do not log in; this is for adult-owned
+ * dashboards, sync setup, and future profile management.
+ */
+export const parentAccounts = pgTable(
+  'parent_accounts',
+  {
+    id: text('id').primaryKey(),
+    displayName: text('display_name').notNull(),
+    email: text('email').notNull(),
+    passwordHash: text('password_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('parent_accounts_email_idx').on(t.email)],
+)
+
+export const parentSessions = pgTable(
+  'parent_sessions',
+  {
+    id: text('id').primaryKey(),
+    parentId: text('parent_id')
+      .notNull()
+      .references(() => parentAccounts.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('parent_sessions_parent_idx').on(t.parentId)],
 )
