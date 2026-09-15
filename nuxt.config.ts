@@ -33,9 +33,14 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    // The landing page. The only screen written for an adult, and the only one
+    // that has to be crawlable and shareable - so it is prerendered to a static
+    // file at build time rather than rendered per request.
+    '/': { prerender: true },
+
     // The child app. Static shell, no SSR, owned by the service worker.
     // Children playing generate zero function invocations.
-    '/': { prerender: true },
+    '/laro': { ssr: false },
     '/pumili': { ssr: false },
     '/wika': { ssr: false },
     '/salita': { ssr: false },
@@ -56,13 +61,15 @@ export default defineNuxtConfig({
     manifest: {
       name: 'Bibo Wika',
       short_name: 'Bibo',
-      description: 'Learn Tagalog, Cebuano, Ilocano and Hiligaynon.',
-      lang: 'en',
+      description: 'Matuto ng Tagalog, Cebuano, Ilocano at Hiligaynon.',
+      lang: 'fil',
       theme_color: '#FFB020',
       background_color: '#6FCBE8',
       display: 'standalone',
       orientation: 'portrait',
-      start_url: '/',
+      // The hub, not the landing page. An installed app belongs to the child,
+      // and a child should never be handed marketing.
+      start_url: '/laro',
       icons: [
         { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -89,7 +96,10 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      htmlAttrs: { lang: 'en' },
+      // Every screen's chrome is Filipino - the landing page copy, the app UI,
+      // and the buttons a child reads. The taught word inside a lesson carries
+      // its own `lang` where it differs.
+      htmlAttrs: { lang: 'fil' },
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'theme-color', content: '#FFB020' },

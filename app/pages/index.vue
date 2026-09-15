@@ -1,610 +1,1202 @@
 <script setup lang="ts">
-import { LANG_META } from '~~/content/types'
+import { LANGS, LANG_META } from '~~/content/types'
+import { hayop } from '~~/content/hayop'
 import { upcoming } from '~~/content/roadmap'
-import type { Pack } from '~/composables/usePack'
+import { BUDDIES } from '~/utils/buddies'
 
 /**
- * Home.
+ * Landing page.
  *
- * Two states of one page:
- *   - First run: a welcome, and one button. Nothing to decide yet.
- *   - Returning: the hub described in spec section 07 - who you are, what to
- *     continue, and the topic map.
+ * This is `/` - the page a parent, a teacher or an adult learner lands on from
+ * a shared link, and the only page in the app written for an adult. The child
+ * app starts at `/laro`, which is also the PWA `start_url`, so an installed
+ * app never opens on marketing.
  *
- * The topic map is a plain vertical list, not a winding island path. A winding
- * map looks charming in a screenshot and is miserable on a 5-inch phone held by
- * a seven-year-old: targets end up small, off-axis and hard to hit.
+ * It is prerendered to a static file, so everything it shows has to come from
+ * `content/` rather than an API call. That is deliberate beyond build config:
+ * the Salita Sabayan demo below is driven by the real Phase 0 topic, not a
+ * screenshot of it, so this page cannot quietly drift away from the product
+ * the way a marketing page usually does.
+ *
+ * Copy is Taglish. The audience is Filipino parents and teachers, plus adults
+ * learning the language their own family speaks - not an export market.
  */
 const profile = useProfile()
 const ground = useGround()
 
-const pack = ref<Pack | null>(null)
-const booting = ref(true)
+/** Live Salita Sabayan demo, driven by the actual Phase 0 topic. */
+const pick = ref(0)
+const concept = computed(() => hayop.concepts[pick.value]!)
 
-onMounted(async () => {
-  await profile.load()
-  if (profile.lang) pack.value = await fetchPack(profile.lang).catch(() => null)
-  booting.value = false
+const buddies = BUDDIES
+
+useHead({
+  title: 'Bibo Wika - Tagalog, Cebuano, Ilocano at Hiligaynon para sa mga bata',
 })
 
-const topic = computed(() => pack.value?.topics[0] ?? null)
-
-/** Mastery is per concept PER LANGUAGE, so these counts are for the active wika. */
-const stats = computed(() => {
-  const lang = profile.lang
-  if (!lang) return { started: 0, mastered: 0 }
-  const mine = Object.entries(profile.boxes).filter(([k]) => k.endsWith(`:${lang}`))
-  return {
-    started: mine.length,
-    mastered: mine.filter(([, box]) => box >= 4).length,
-  }
+useSeoMeta({
+  description:
+    'Isang app para matutunan ang Tagalog, Cebuano, Ilocano at Hiligaynon. Para sa edad 4-12 at sa kahit sinong gustong matuto ng wika ng pamilya. Libre, walang account, gumagana offline.',
+  ogTitle: 'Bibo Wika - apat na wika, isang laro',
+  ogDescription:
+    'Tagalog, Cebuano, Ilocano at Hiligaynon sa isang app. Isang konsepto, apat na wika, magkatabi.',
+  ogType: 'website',
+  ogLocale: 'fil_PH',
 })
-
-const progress = computed(() => {
-  const t = topic.value
-  const lang = profile.lang
-  if (!t || !lang) return { done: 0, total: 0, pct: 0 }
-  const done = t.concepts.filter((c) => (profile.boxes[`${c.id}:${lang}`] ?? 0) > 0).length
-  return { done, total: t.concepts.length, pct: t.concepts.length ? done / t.concepts.length : 0 }
-})
-
-const topicStars = computed(() => {
-  const p = progress.value
-  if (!p.total) return 0
-  return p.pct >= 1 ? 3 : p.pct >= 0.6 ? 2 : p.pct > 0 ? 1 : 0
-})
-
-useHead({ title: 'Bibo Wika' })
 </script>
 
 <template>
-  <div class="screen home">
-    <!-- ==================================== first run (and the prerendered
-         shell - `/` is a static file, so this is what a cold visitor and a
-         link preview both get, rather than a spinner) -->
-    <template v-if="booting || !profile.started">
-      <button class="ground-toggle" :aria-label="ground.label.value" @click="ground.toggle">
-        {{ ground.icon.value }}
-      </button>
+  <div class="land">
+    <!-- ============================================================= nav -->
+    <header class="nav">
+      <div class="wrap nav-in">
+        <span class="mark">Bibo&nbsp;Wika</span>
 
-      <div class="grow hero">
-        <div class="logo rise">
-          <h1 class="title">Bibo<br />Wika</h1>
-          <p class="tagline">Mag-aral tayo ng wika!</p>
-        </div>
-        <div class="crowd">
-          <BuddyAvatar name="tikoy" :size="104" class="b1" />
-          <BuddyAvatar name="sari" :size="88" class="b2" />
-          <BuddyAvatar name="pawi" :size="80" class="b3" />
-        </div>
-      </div>
+        <nav class="nav-links" aria-label="Mga seksyon">
+          <a href="#wika">Mga wika</a>
+          <a href="#sabayan">Salita Sabayan</a>
+          <a href="#bakit">Bakit ito</a>
+        </nav>
 
-      <BiboButton class="foot-btn" tone="mangga" @click="navigateTo('/pumili')">
-        Magsimula
-      </BiboButton>
-    </template>
-
-    <!-- =============================================================== hub -->
-    <template v-else>
-      <header class="bar">
-        <button class="me" @click="navigateTo('/pumili')">
-          <BuddyAvatar :name="profile.buddy!" :size="54" />
-          <span class="me-txt">
-            <span class="me-hi">Kumusta!</span>
-            <span class="me-sub">{{ buddyLabel(profile.buddy!) }}</span>
-          </span>
-        </button>
-        <button class="wika-chip lift" :class="`w-${profile.lang}`" @click="navigateTo('/wika')">
-          {{ LANG_META[profile.lang!].name }}
-        </button>
-        <button class="ground-btn" :aria-label="ground.label.value" @click="ground.toggle">
+        <button class="icon-btn lift" :aria-label="ground.label.value" @click="ground.toggle">
           {{ ground.icon.value }}
         </button>
-      </header>
 
-      <div class="hub">
-        <section class="panel">
-          <div class="tiles">
-            <div class="tile">
-              <span class="tile-n">{{ profile.xp }}</span>
-              <span class="tile-l">XP</span>
-            </div>
-            <div class="tile">
-              <span class="tile-n">{{ stats.started }}</span>
-              <span class="tile-l">Salita</span>
-            </div>
-            <div class="tile">
-              <span class="tile-n">{{ stats.mastered }}</span>
-              <span class="tile-l">Kabisado</span>
-            </div>
-          </div>
-
-          <div v-if="topic" class="cont chunk">
-            <p class="say">{{ progress.done ? 'Magpatuloy' : 'Simulan' }}</p>
-            <h2 class="heading">{{ topic.title }}</h2>
-            <div class="cont-row">
-              <ProgressPips :total="progress.total" :done="progress.done" />
-              <span class="cont-count">{{ progress.done }}/{{ progress.total }}</span>
-            </div>
-            <BiboButton tone="dahon" @click="navigateTo(`/laro/${topic.slug}`)">
-              Maglaro
-            </BiboButton>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h3 class="sec">Mga Aralin</h3>
-          <div class="list">
-            <button
-              v-if="topic"
-              class="topic lift"
-              @click="navigateTo(`/laro/${topic.slug}`)"
-            >
-              <span class="topic-art"><AnimalArt :art="topic.art" :size="42" /></span>
-              <span class="topic-txt">
-                <span class="topic-nm">{{ topic.title }}</span>
-                <span class="topic-sub">{{ progress.done }} / {{ progress.total }} salita</span>
-              </span>
-              <span class="topic-stars">{{ '★'.repeat(topicStars) }}{{ '☆'.repeat(3 - topicStars) }}</span>
-            </button>
-
-            <div v-for="u in upcoming" :key="u.slug" class="topic locked">
-              <span class="topic-art">
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                  <rect x="4" y="10" width="16" height="11" rx="3" fill="currentColor" />
-                  <path
-                    d="M8 10 V7 a4 4 0 0 1 8 0 v3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.6"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </span>
-              <span class="topic-txt">
-                <span class="topic-nm">{{ u.title[profile.lang!] }}</span>
-                <span class="topic-sub">Malapit na</span>
-              </span>
-            </div>
-          </div>
-
-          <button class="sabayan lift" @click="navigateTo('/salita')">
-            <span class="sab-keys">
-              <span class="k w-tl">TL</span><span class="k w-ceb">CEB</span>
-              <span class="k w-ilo">ILO</span><span class="k w-hil">HIL</span>
-            </span>
-            <span class="sab-txt">
-              <span class="sab-nm">Salita Sabayan</span>
-              <span class="sab-sub">Isang salita, apat na wika</span>
-            </span>
-            <span class="sab-go" aria-hidden="true">›</span>
-          </button>
-        </section>
+        <NuxtLink v-if="profile.started" to="/laro" class="nav-cta lift">Magpatuloy</NuxtLink>
+        <NuxtLink v-else to="/pumili" class="nav-cta lift">Maglaro</NuxtLink>
       </div>
-    </template>
+    </header>
+
+    <main>
+      <!-- ========================================================== hero -->
+      <section class="hero">
+        <div class="wrap hero-in">
+          <div class="hero-txt">
+            <p class="eyebrow">
+              <span class="pill">Edad 4-12</span>
+              <span class="pill">Libre</span>
+              <span class="pill">Walang ads</span>
+            </p>
+
+            <h1 class="h-xl">Apat na wika.<br />Isang laro.</h1>
+
+            <p class="lede">
+              Tagalog, Cebuano, Ilocano at Hiligaynon - sa isang app na ginawa para sa mga bata, at
+              para sa kahit sinong gustong matuto ng wika ng sarili niyang pamilya. Walang account,
+              walang bayad, at gumagana kahit walang signal.
+            </p>
+
+            <div class="cta-row">
+              <NuxtLink to="/pumili" class="cta cta-main lift">Magsimula</NuxtLink>
+              <NuxtLink to="/salita" class="cta cta-alt lift">Tingnan ang Salita Sabayan</NuxtLink>
+            </div>
+
+            <p v-if="profile.started" class="cta-note">
+              Nandito ka na dati?
+              <NuxtLink to="/laro">Ituloy ang nasimulan mo</NuxtLink>
+            </p>
+            <p v-else class="cta-note">Walang sign-up. Diretso sa laro.</p>
+          </div>
+
+          <div class="hero-art" aria-hidden="true">
+            <div class="card-stack">
+              <div class="peek chunk tilt-l">
+                <AnimalArt art="butterfly" :size="56" />
+                <span class="peek-w">paruparo</span>
+                <span class="wika-chip w-tl">TL</span>
+              </div>
+              <div class="peek chunk tilt-r">
+                <AnimalArt art="carabao" :size="56" />
+                <span class="peek-w">nuang</span>
+                <span class="wika-chip w-ilo">ILO</span>
+              </div>
+              <div class="peek chunk tilt-l">
+                <AnimalArt art="cat" :size="56" />
+                <span class="peek-w">kuring</span>
+                <span class="wika-chip w-hil">HIL</span>
+              </div>
+            </div>
+
+            <div class="crowd">
+              <BuddyAvatar name="tikoy" :size="96" class="c1" />
+              <BuddyAvatar name="sari" :size="84" class="c2" />
+              <BuddyAvatar name="pawi" :size="76" class="c3" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Honest, and on purpose. A landing page that oversells a Phase 0
+           slice burns the trust of exactly the parents we need. -->
+      <aside class="note">
+        <div class="wrap note-in">
+          <span class="note-tag">Maagang bersyon</span>
+          <p>
+            Isang topic pa lang ang bukas - <strong>Mga Hayop</strong>, walong salita sa apat na
+            wika. Ineere-record pa ng mga native speaker ang mga boses, kaya wala pang tunog ang
+            mga salita. Ang natitira sa app ay totoo at nalalaro na ngayon.
+          </p>
+        </div>
+      </aside>
+
+      <!-- ========================================================== wika -->
+      <section id="wika" class="sec">
+        <div class="wrap">
+          <p class="kicker">Apat na wika</p>
+          <h2 class="h-lg">Hindi lang Tagalog</h2>
+          <p class="sub">
+            Karamihan ng mga app ay Filipino lang. Dito, magkapantay ang apat - may sariling gabay,
+            sariling salita at sariling boses ang bawat wika. Pumili ng isa, o subukan lahat.
+          </p>
+
+          <div class="grid-4">
+            <article v-for="l in LANGS" :key="l" class="chunk wcard" :class="`accent-${l}`">
+              <span class="wika-chip" :class="`w-${l}`">{{ l.toUpperCase() }}</span>
+              <h3 class="wcard-nm">{{ LANG_META[l].name }}</h3>
+              <p class="wcard-en">{{ LANG_META[l].endonym }}</p>
+              <p class="wcard-guide">
+                Gabay: <strong>{{ LANG_META[l].guide }}</strong>
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= sabayan -->
+      <section id="sabayan" class="sec sec-alt">
+        <div class="wrap">
+          <p class="kicker">Ang kaibahan namin</p>
+          <h2 class="h-lg">Salita Sabayan</h2>
+          <p class="sub">
+            Isang konsepto, apat na wika, magkatabi. Pindutin ang hayop - ito mismo ang nilalaman
+            ng app, hindi larawan nito.
+          </p>
+
+          <div class="demo">
+            <div class="demo-pick" role="group" aria-label="Pumili ng salita">
+              <button
+                v-for="(c, i) in hayop.concepts"
+                :key="c.id"
+                class="chip-art lift"
+                :class="{ on: i === pick }"
+                :aria-pressed="i === pick"
+                @click="pick = i"
+              >
+                <AnimalArt :art="c.art" :size="34" />
+                <span class="chip-en">{{ c.en }}</span>
+              </button>
+            </div>
+
+            <div class="demo-panel chunk">
+              <div class="demo-head">
+                <AnimalArt :art="concept.art" :size="76" />
+                <div>
+                  <p class="say">Konsepto</p>
+                  <h3 class="demo-en">{{ concept.en }}</h3>
+                  <p class="demo-id">{{ concept.id }}</p>
+                </div>
+              </div>
+
+              <ul class="forms">
+                <li v-for="l in LANGS" :key="l" class="form">
+                  <span class="wika-chip" :class="`w-${l}`">{{ l.toUpperCase() }}</span>
+                  <span class="form-txt">
+                    <span class="form-w">{{ concept.forms[l].text }}</span>
+                    <span class="form-r">{{ concept.forms[l].respell }}</span>
+                  </span>
+                  <span v-if="concept.forms[l].variants?.length" class="form-v">
+                    o <strong>{{ concept.forms[l].variants!.join(', ') }}</strong>
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="chunk gotcha">
+            <p class="say">Bakit konsepto, hindi salita</p>
+            <p class="gotcha-txt">
+              Sa Cebuano, <strong>langgam</strong> ang tawag sa <em>ibon</em>. Sa Tagalog, ang
+              <strong>langgam</strong> ay <em>insekto</em>. Parehong baybay, magkaibang hayop.
+              Dahil nakakabit ang lahat sa isang konsepto - isang larawan, isang kahulugan - hindi
+              ito nagkakamali, kahit magdagdag pa kami ng panlimang wika.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= bakit -->
+      <section id="bakit" class="sec">
+        <div class="wrap">
+          <p class="kicker">Bakit ito</p>
+          <h2 class="h-lg">Ginawa para sa totoong pamilyang Pilipino</h2>
+
+          <div class="grid-2">
+            <article class="chunk why">
+              <span class="why-ic" aria-hidden="true">🎙️</span>
+              <h3 class="why-nm">Tunay na boses, hindi robot</h3>
+              <p class="why-tx">
+                Walang maaasahang text-to-speech para sa Cebuano, Ilocano at Hiligaynon - kaya
+                recorded native speakers ang plano, hindi sintetikong boses. Dadaan ang bawat clip
+                sa dalawang native reviewer bago ito marinig ng isang bata.
+              </p>
+            </article>
+
+            <article class="chunk why">
+              <span class="why-ic" aria-hidden="true">🗺️</span>
+              <h3 class="why-nm">Tama rin ang sinasabi ng lola mo</h3>
+              <p class="why-tx">
+                Sa Bohol, <strong>ido</strong> ang aso - hindi <strong>iro</strong>. Tinatanggap
+                namin ang dalawa. Hindi kailanman mamamali ang batang sumusunod sa sariling bayan.
+              </p>
+            </article>
+
+            <article class="chunk why">
+              <span class="why-ic" aria-hidden="true">📴</span>
+              <h3 class="why-nm">Walang account, gumagana offline</h3>
+              <p class="why-tx">
+                Nasa device lang ang progreso ng bata. Walang login, walang email, walang ads,
+                walang tracking - at tuloy ang laro kahit nawalan ng signal.
+              </p>
+            </article>
+
+            <article class="chunk why">
+              <span class="why-ic" aria-hidden="true">🧸</span>
+              <h3 class="why-nm">Walang parusa</h3>
+              <p class="why-tx">
+                Malalaki ang pindutan, walang timer, walang buzzer. Kapag mali, nag-iisip lang ang
+                buddy at inuulit ang salita. Ulit-ulit ang dating, hindi pasa-bagsak.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= paano -->
+      <section class="sec sec-alt">
+        <div class="wrap">
+          <p class="kicker">Paano maglaro</p>
+          <h2 class="h-lg">Tatlong pindot bago magsimula</h2>
+
+          <ol class="steps">
+            <li class="chunk step">
+              <span class="step-n">1</span>
+              <div class="step-body">
+                <h3 class="step-nm">Pumili ng buddy</h3>
+                <p class="step-tx">Anim na hayop na Pilipino ang kasama ng bata sa buong laro.</p>
+                <div class="step-buddies" aria-hidden="true">
+                  <BuddyAvatar v-for="b in buddies" :key="b.id" :name="b.id" :size="44" />
+                </div>
+              </div>
+            </li>
+
+            <li class="chunk step">
+              <span class="step-n">2</span>
+              <div class="step-body">
+                <h3 class="step-nm">Pumili ng wika</h3>
+                <p class="step-tx">
+                  Puwedeng palitan kahit kailan. Hiwalay ang progreso sa bawat wika, kaya hindi
+                  nawawala ang naunang natutunan.
+                </p>
+                <div class="step-chips">
+                  <span v-for="l in LANGS" :key="l" class="wika-chip" :class="`w-${l}`">
+                    {{ LANG_META[l].name }}
+                  </span>
+                </div>
+              </div>
+            </li>
+
+            <li class="chunk step">
+              <span class="step-n">3</span>
+              <div class="step-body">
+                <h3 class="step-nm">Maglaro</h3>
+                <p class="step-tx">
+                  Dalawang uri ng laro: <strong>Pakinggan at Pindutin</strong> - marinig ang salita,
+                  pindutin ang tamang larawan. <strong>Tugma</strong> - ipares ang salita sa
+                  larawan. Nagtatapos ang bawat aralin sa Salita Sabayan.
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ======================================================== kanino -->
+      <section class="sec">
+        <div class="wrap">
+          <p class="kicker">Para kanino</p>
+          <h2 class="h-lg">Hindi lang para sa mga bata</h2>
+
+          <div class="grid-3">
+            <article class="chunk who">
+              <h3 class="who-nm">Mga magulang</h3>
+              <p class="who-tx">
+                Para sa pamilyang lumaki sa ibang bayan - o sa ibang bansa - at gustong marinig ng
+                anak ang wika ng mga lolo at lola. Iabot ang tablet, ayos na.
+              </p>
+            </article>
+
+            <article class="chunk who">
+              <h3 class="who-nm">Mga guro</h3>
+              <p class="who-tx">
+                Mother tongue at Filipino sa iisang lugar. Isang konsepto, apat na wika - kita agad
+                kung saan nagkakapareho at saan nagkakaiba ang mga salita.
+              </p>
+            </article>
+
+            <article class="chunk who">
+              <h3 class="who-nm">Mga adult learner</h3>
+              <p class="who-tx">
+                Marunong ka ng Tagalog pero gusto mong maintindihan ang Bisaya ng asawa mo? Simple
+                ang laro pero totoo ang nilalaman - at hindi ka nito bibilisan.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= susunod -->
+      <section class="sec sec-alt">
+        <div class="wrap">
+          <p class="kicker">Ano ang susunod</p>
+          <h2 class="h-lg">Mga paparating na aralin</h2>
+          <p class="sub">
+            Bukas na ngayon ang <strong>Mga Hayop</strong>. Ito ang mga susunod, sa apat na wika
+            din.
+          </p>
+
+          <div class="soon">
+            <span v-for="u in upcoming" :key="u.slug" class="chunk soon-chip">
+              <strong>{{ u.title.tl }}</strong>
+              <span class="soon-en">{{ u.en }}</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== last cta -->
+      <section class="last">
+        <div class="wrap last-in">
+          <BuddyAvatar name="tikoy" :size="104" class="last-buddy" />
+          <h2 class="h-lg">Simulan natin?</h2>
+          <p class="sub">Walang account, walang bayad. Isang pindot at nasa unang aralin ka na.</p>
+          <NuxtLink to="/pumili" class="cta cta-main lift">Magsimula</NuxtLink>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-in">
+        <span class="mark">Bibo&nbsp;Wika</span>
+        <nav class="foot-links" aria-label="Mga link">
+          <NuxtLink to="/pumili">Maglaro</NuxtLink>
+          <NuxtLink to="/salita">Salita Sabayan</NuxtLink>
+          <NuxtLink to="/wika">Mga wika</NuxtLink>
+        </nav>
+        <p class="foot-note">
+          Tagalog · Cebuano · Ilocano · Hiligaynon. Maagang bersyon - hindi pa kumpleto ang audio.
+        </p>
+      </div>
+    </footer>
   </div>
 </template>
 
 <style scoped>
-.home {
-  position: relative;
-}
-
-.center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ------------------------------------------------------------- first run */
-.hero {
+/* -----------------------------------------------------------------------------
+   The landing page is the one screen that is NOT `.screen`. The child app caps
+   itself at 1080px because a four-year-old should not have to track answer
+   cards across a 27-inch monitor; an adult reading a page has the opposite
+   need, so sections go full-bleed and only the content column is capped.
+----------------------------------------------------------------------------- */
+.land {
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
 }
 
-.logo {
+.wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  padding-inline: 18px;
+}
+
+@media (min-width: 700px) {
+  .wrap {
+    padding-inline: 28px;
+  }
+}
+
+/* ------------------------------------------------------------------- nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-block: 10px;
+  background: color-mix(in srgb, var(--ground-1) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: var(--edge) solid var(--linya);
+}
+
+.nav-in {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mark {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+}
+
+.nav-links {
+  display: none;
+  margin-left: 18px;
+  gap: 18px;
+}
+
+.nav-links a {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--tinta-2);
+  text-decoration: none;
+}
+
+.nav-links a:hover {
+  color: var(--tinta);
+}
+
+@media (min-width: 860px) {
+  .nav-links {
+    display: flex;
+  }
+}
+
+.icon-btn {
+  margin-left: auto;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+  line-height: 1;
   background: var(--papel);
+  border: var(--edge) solid var(--linya);
+  border-radius: 50%;
+  box-shadow: 0 4px 0 var(--lift);
+}
+
+.icon-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--lift);
+}
+
+/* `--linya`, not `--tinta`, for anything sitting on a sticker colour. The
+   sticker palette is identical in both grounds, but `--tinta` flips to cream
+   at night - which lands cream ink on a yellow button at about 1.4:1. The ink
+   line colour is dark in both grounds, which is exactly what is needed here. */
+.nav-cta {
+  flex: none;
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--linya);
+  text-decoration: none;
+  background: var(--mangga);
+  border: var(--edge) solid var(--linya);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--lift);
+  padding: 8px 18px;
+}
+
+.nav-cta:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--lift);
+}
+
+/* ------------------------------------------------------------------ hero */
+.hero {
+  padding-block: 40px 32px;
+}
+
+.hero-in {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+.pill {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tinta);
+  background: var(--papel);
+  border: 2.5px solid var(--linya);
+  border-radius: 999px;
+  padding: 3px 11px;
+}
+
+.h-xl {
+  font-family: var(--display);
+  font-size: clamp(40px, 11vw, 68px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+
+.lede {
+  margin-top: 16px;
+  font-size: clamp(16px, 4vw, 19px);
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--tinta);
+  max-width: 48ch;
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* 64px minimum target, the same rule the app plays by. */
+  min-height: 64px;
+  padding: 14px 28px;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
   border: var(--edge) solid var(--linya);
   border-radius: var(--round);
   box-shadow: 0 var(--drop) 0 var(--lift);
-  padding: 22px 32px;
-  text-align: center;
-  transform: rotate(-2.5deg);
+  touch-action: manipulation;
+  transition:
+    transform 0.09s var(--ease),
+    box-shadow 0.09s var(--ease);
 }
 
-.title {
-  font-size: clamp(46px, 15vw, 72px);
-  color: var(--sili);
-  -webkit-text-stroke: 2px var(--linya);
-  paint-order: stroke fill;
+.cta:active {
+  transform: translateY(var(--drop));
+  box-shadow: 0 0 0 var(--lift);
 }
 
-.tagline {
-  font-family: var(--display);
-  font-size: 17px;
+.cta-main {
+  background: var(--mangga);
+  color: var(--linya);
+}
+
+.cta-alt {
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+/* On a phone the two buttons sit on their own rows anyway, so let them match
+   width - a narrow primary beside a wide secondary reads as the smaller of
+   the two choices, which is backwards. */
+@media (max-width: 520px) {
+  .cta {
+    width: 100%;
+  }
+}
+
+.cta-note {
+  margin-top: 14px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--tinta-2);
-  margin-top: 6px;
+}
+
+.cta-note a {
+  color: var(--tinta);
+}
+
+/* hero art */
+.hero-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.peek {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.peek-w {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.peek .wika-chip {
+  margin-left: auto;
+  font-size: 11px;
 }
 
 .crowd {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 2px;
 }
 
-.b1 { z-index: 3; }
-.b2 { margin-left: -14px; animation-delay: 0.4s; z-index: 2; }
-.b3 { margin-left: -12px; animation-delay: 0.8s; z-index: 1; }
-
-.ground-toggle {
-  position: absolute;
-  top: max(14px, env(safe-area-inset-top));
-  right: 16px;
-  width: 48px;
-  height: 48px;
-  font-size: 22px;
-  line-height: 1;
-  background: var(--papel);
-  border: var(--edge) solid var(--linya);
-  border-radius: 50%;
-  box-shadow: 0 4px 0 var(--lift);
-  z-index: 10;
+.c2 {
+  margin-left: -14px;
+  animation-delay: 0.4s;
 }
 
-.ground-toggle:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--lift);
+.c3 {
+  margin-left: -12px;
+  animation-delay: 0.8s;
 }
 
-/* ------------------------------------------------------------------- hub */
-.bar {
+@media (min-width: 900px) {
+  .hero {
+    padding-block: 60px 44px;
+  }
+
+  .hero-in {
+    flex-direction: row;
+    align-items: center;
+    gap: 48px;
+  }
+
+  .hero-txt {
+    flex: 1 1 56%;
+  }
+
+  .hero-art {
+    flex: 1 1 44%;
+  }
+}
+
+/* ------------------------------------------------------------------ note
+   A dashed border, not a sticker card: this is a caveat, not a feature. */
+.note {
+  padding-block: 4px 28px;
+}
+
+.note-in {
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.me {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 14px 5px 5px;
-  background: var(--papel);
-  border: var(--edge) solid var(--linya);
-  border-radius: 999px;
-  box-shadow: 0 4px 0 var(--lift);
-  text-align: left;
-  min-width: 0;
-}
-
-.me:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--lift);
-}
-
-.me-txt {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.me-hi {
-  font-family: var(--display);
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.me-sub {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--tinta-2);
-}
-
-.bar .wika-chip {
-  margin-left: auto;
-  box-shadow: 0 4px 0 var(--lift);
-  padding: 7px 14px;
-  font-size: 14px;
-}
-
-.bar .wika-chip:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--lift);
-}
-
-.ground-btn {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  font-size: 19px;
-  line-height: 1;
-  background: var(--papel);
-  border: var(--edge) solid var(--linya);
-  border-radius: 50%;
-  box-shadow: 0 4px 0 var(--lift);
-}
-
-.ground-btn:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--lift);
-}
-
-/* No inner scroller - the document scrolls. A nested scroll area here means
-   the header scrolls away AND the list scrolls, which is two scrollbars
-   fighting over one gesture. */
-.hub {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* stat tiles */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 6px 8px;
-  background: var(--papel);
-  border: var(--edge) solid var(--linya);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 14px;
+  max-width: 900px;
+  padding: 14px 18px;
+  background: var(--papel-2);
+  border: 2.5px dashed var(--linya);
   border-radius: var(--round-sm);
-  box-shadow: 0 4px 0 var(--lift);
 }
 
-.tile-n {
+.note-tag {
+  flex: none;
   font-family: var(--display);
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.tile-l {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--tinta-2);
-  margin-top: 3px;
+  color: var(--linya);
+  background: var(--sili);
+  border: 2.5px solid var(--linya);
+  border-radius: 999px;
+  padding: 2px 11px;
 }
 
-/* continue card */
-.cont {
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--papel-2);
-}
-
-.cont-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cont-count {
-  font-family: var(--display);
+.note-in p {
+  flex: 1 1 260px;
   font-size: 15px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  flex: none;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--tinta);
 }
 
-/* topic list */
+/* -------------------------------------------------------------- sections */
 .sec {
-  font-family: var(--display);
+  padding-block: 44px;
+  /* The nav is sticky, so an anchor jump would otherwise park the heading
+     underneath it. */
+  scroll-margin-top: 74px;
+}
+
+.sec-alt {
+  background: color-mix(in srgb, var(--papel) 26%, transparent);
+  border-block: var(--edge) solid var(--linya);
+}
+
+.kicker {
+  font-family: var(--ui);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--tinta-2);
+  margin-bottom: 8px;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.topic {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 66px;
-  padding: 8px 14px;
-  text-align: left;
-  background: var(--papel);
-  border: var(--edge) solid var(--linya);
-  border-radius: var(--round-sm);
-  box-shadow: 0 4px 0 var(--lift);
-}
-
-.topic:active:not(.locked) {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--lift);
-}
-
-.topic.locked {
-  opacity: 0.5;
-  box-shadow: none;
-  border-style: dashed;
-  color: var(--tinta-2);
-}
-
-.topic-art {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 46px;
-}
-
-.topic-txt {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.topic-nm {
+.h-lg {
   font-family: var(--display);
-  font-size: 18px;
+  font-size: clamp(27px, 6.5vw, 40px);
   font-weight: 800;
-  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--tinta);
 }
 
-.topic-sub {
-  font-size: 12px;
+.sub {
+  margin-top: 12px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--tinta-2);
+  line-height: 1.55;
+  color: var(--tinta);
+  max-width: 62ch;
 }
 
-.topic-stars {
-  margin-left: auto;
-  flex: none;
+.grid-4,
+.grid-3,
+.grid-2 {
+  display: grid;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+@media (min-width: 620px) {
+  .grid-4,
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------ wika cards */
+.wcard {
+  padding: 16px 16px 18px;
+  border-top-width: 9px;
+}
+
+.wcard.accent-tl {
+  border-top-color: var(--tl);
+}
+.wcard.accent-ceb {
+  border-top-color: var(--ceb);
+}
+.wcard.accent-ilo {
+  border-top-color: var(--ilo);
+}
+.wcard.accent-hil {
+  border-top-color: var(--hil);
+}
+
+.wcard-nm {
+  margin-top: 10px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.wcard-en {
   font-size: 14px;
-  letter-spacing: 1px;
-  color: var(--mangga);
+  font-weight: 700;
+  color: var(--tinta-2);
+  margin-top: 2px;
 }
 
-/* salita sabayan */
-.sabayan {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 70px;
-  padding: 10px 14px;
-  text-align: left;
-  background: var(--papel);
-  border: var(--edge) solid var(--linya);
-  border-radius: var(--round-sm);
-  box-shadow: 0 4px 0 var(--lift);
-  margin-top: 4px;
-}
-
-.sabayan:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--lift);
-}
-
-.sab-keys {
-  flex: none;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
-}
-
-.sab-keys .k {
-  font-family: var(--display);
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: #fff;
-  padding: 2px 4px;
-  border-radius: 4px;
-  border: 1.5px solid var(--linya);
-  text-align: center;
-}
-
-.sab-txt {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.sab-nm {
-  font-family: var(--display);
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.sab-sub {
-  font-size: 12px;
+.wcard-guide {
+  margin-top: 10px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--tinta-2);
 }
 
-.sab-go {
-  margin-left: auto;
+/* ------------------------------------------------------------------ demo */
+.demo {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.demo-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-art {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px 7px 8px;
+  background: var(--papel);
+  border: 2.5px solid var(--linya);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--lift);
+}
+
+.chip-art:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--lift);
+}
+
+.chip-art.on {
+  background: var(--mangga);
+  color: var(--linya);
+}
+
+.chip-en {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.demo-panel {
+  padding: 18px;
+}
+
+.demo-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 2.5px dashed color-mix(in srgb, var(--tinta-2) 45%, transparent);
+}
+
+.demo-en {
   font-family: var(--display);
   font-size: 26px;
   font-weight: 800;
+  text-transform: capitalize;
+  line-height: 1.1;
+}
+
+.demo-id {
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 700;
   color: var(--tinta-2);
+}
+
+.forms {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 9px 4px;
+}
+
+.form + .form {
+  border-top: 2px solid color-mix(in srgb, var(--tinta-2) 22%, transparent);
+}
+
+.form .wika-chip {
+  flex: none;
+  min-width: 52px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.form-txt {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.form-w {
+  font-family: var(--display);
+  font-size: clamp(22px, 5vw, 28px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.form-r {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--tinta-2);
+}
+
+.form-v {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+
+@media (min-width: 900px) {
+  .demo {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    align-items: start;
+    gap: 22px;
+  }
+
+  .demo-pick {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chip-art {
+    border-radius: var(--round-sm);
+  }
+}
+
+.gotcha {
+  margin-top: 18px;
+  padding: 16px 18px;
+  background: var(--papel-2);
+}
+
+.gotcha-txt {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.55;
+  max-width: 68ch;
+}
+
+.gotcha-txt em {
+  font-style: normal;
+  color: var(--tinta-2);
+}
+
+/* ------------------------------------------------------------------- why */
+.why {
+  padding: 18px;
+}
+
+.why-ic {
+  font-size: 26px;
   line-height: 1;
 }
 
-/* ----------------------------------------------------------------- wide */
-@media (min-width: 1024px) {
-  .hero {
-    flex-direction: row;
-    gap: 64px;
-    justify-content: center;
-  }
+.why-nm {
+  margin-top: 10px;
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 800;
+}
 
-  .logo {
-    padding: 34px 46px;
-  }
+.why-tx {
+  margin-top: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--tinta);
+}
 
-  .title {
-    font-size: 88px;
-  }
+/* ----------------------------------------------------------------- steps */
+.steps {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
-  .tagline {
-    font-size: 21px;
-  }
+.step {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+}
 
-  .crowd :deep(.buddy) {
-    width: 150px;
-    height: 150px;
-  }
+.step-n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--ube);
+  border: var(--edge) solid var(--linya);
+  border-radius: 50%;
+}
 
-  .b2,
-  .b3 {
-    width: 124px;
-    height: 124px;
-  }
+.step-nm {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+}
 
-  /* The hub becomes two columns: identity and progress on the left, the map
-     on the right - so nothing important sits below the fold. */
-  .hub {
-    display: grid;
-    grid-template-columns: minmax(300px, 400px) 1fr;
-    gap: 30px;
-    align-items: start;
-  }
+.step-tx {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+  max-width: 62ch;
+}
 
-  .tile-n {
-    font-size: 32px;
-  }
+.step-buddies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 12px;
+}
 
-  .cont {
-    padding: 20px 22px;
-  }
+.step-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
 
-  .topic {
-    min-height: 78px;
-  }
+/* ------------------------------------------------------------------- who */
+.who {
+  padding: 18px;
+}
 
-  .topic-nm {
-    font-size: 20px;
-  }
+.who-nm {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.who-tx {
+  margin-top: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+/* ------------------------------------------------------------------ soon */
+.soon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.soon-chip {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  background: transparent;
+  border-style: dashed;
+  border-width: 2.5px;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+.soon-chip strong {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.soon-en {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+
+/* -------------------------------------------------------------- last cta */
+.last {
+  padding-block: 52px 60px;
+  text-align: center;
+}
+
+.last-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.last .sub {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.last .cta {
+  margin-top: 22px;
+  min-width: 240px;
+}
+
+.last-buddy {
+  margin-bottom: 8px;
+}
+
+/* ---------------------------------------------------------------- footer */
+.foot {
+  margin-top: auto;
+  padding-block: 22px max(22px, env(safe-area-inset-bottom));
+  border-top: var(--edge) solid var(--linya);
+  background: color-mix(in srgb, var(--papel) 26%, transparent);
+}
+
+.foot-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.foot-links a {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--tinta-2);
+  text-decoration: none;
+}
+
+.foot-links a:hover {
+  color: var(--tinta);
+}
+
+.foot-note {
+  flex: 1 1 100%;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tinta-2);
 }
 </style>

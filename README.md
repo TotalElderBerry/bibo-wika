@@ -90,7 +90,11 @@ app/
   assets/css/main.css The visual system. Sticker book: thick ink outlines, hard
                       offset shadows, flat bright fills, day and night grounds.
   components/         BuddyAvatar, AnimalArt, TapCard, BiboButton, ProgressPips, StarBurst.
-  pages/              index   home: welcome on first run, hub after that
+  pages/              index   landing page - the only screen written for an
+                              adult. Prerendered, Taglish, and driven by the
+                              real content files rather than screenshots.
+                      laro/index    the child app: welcome on first run, hub
+                                    after that. Also the PWA start_url.
                       pumili  buddy picker
                       wika    language picker
                       salita  Salita Sabayan browser - all four languages
@@ -104,8 +108,15 @@ scripts/seed.ts       content/ -> Neon.
 
 ## Screens and input
 
-The app is playable on a phone, a tablet and a laptop. Wide screens are not just a wider column —
-desktop means a mouse *and* a keyboard, and both are supported.
+**`/` is the landing page, `/laro` is the app.** The landing page is the one screen written for an
+adult — a parent, a teacher, or someone learning their own family's language — so it is Taglish,
+prerendered for crawlers and link previews, and free of the 560px column the app screens live in.
+The child app starts at `/laro`, which is also the PWA `start_url`: an installed icon opens on the
+hub and a child is never handed marketing. Its Salita Sabayan demo is rendered from `content/hayop.ts`
+directly, so the page cannot drift away from the product the way a marketing page usually does.
+
+The app itself is playable on a phone, a tablet and a laptop. Wide screens are not just a wider
+column — desktop means a mouse *and* a keyboard, and both are supported.
 
 | Width | Layout |
 | --- | --- |
@@ -156,6 +167,8 @@ workflow moves forms to `recorded` and stops there, on purpose.
 - Hayop topic: 8 concepts × 4 languages, with regional variants recorded
 - Two exercise types: *Pakinggan at Pindutin* (listen and tap) and *Tugma* (match)
 - Home hub — progress tiles, continue card, topic map with locked topics visible
+- Landing page at `/`, prerendered and Taglish, with a live Salita Sabayan demo driven by the
+  real content files. States the Phase 0 audio gap on the page rather than hiding it.
 - *Salita Sabayan* — one concept in all four languages, as a browsable screen and
   as the end-of-lesson card. The product's differentiator.
 - Six buddies as layered SVG, with idle / cheer / think / talk moods
