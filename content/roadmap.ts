@@ -26,3 +26,42 @@ export interface UpcomingTopic {
 }
 
 export const upcoming: UpcomingTopic[] = []
+
+/**
+ * Features announced but not built.
+ *
+ * Same contract as `upcoming` above: everything here is visible on the landing
+ * page and nothing here is reachable. A feature leaves this list on the day it
+ * becomes usable, not on the day it becomes half-usable.
+ */
+export interface UpcomingFeature {
+  id: string
+  /** Taglish. The landing page is the one screen written for an adult. */
+  title: string
+  blurb: string
+  /** The named pieces. Every one of these is a thing that does not exist yet. */
+  parts: Array<{ name: string; note: string }>
+}
+
+export const upcomingFeatures: UpcomingFeature[] = [
+  {
+    id: 'matanda',
+    title: 'Para sa matatanda',
+    blurb:
+      'Ang parehong apat na wika, para sa mga nasa hustong gulang na gustong matutunan ang wika ng sariling pamilya - ang Ilocano ni lolo, ang Cebuano ni lola. Nasa modelo na ang antas na matanda at nakamarka na rito ang lahat ng 48 konsepto. Wala pang aralin na nakatutok sa matanda.',
+    parts: [
+      {
+        name: 'Sariling account',
+        note: 'Sariling login ang matandang nag-aaral - hindi profile sa ilalim ng account ng magulang. Gagamitin nito ang parehong account at session na umiiral na ngayon para sa mga magulang.',
+      },
+      {
+        name: 'Mas malalim na aralin',
+        note: 'Higit sa pakinggan-at-pindutin: pagbasa, pagbaybay, at buong pangungusap. Dalawa pa lang sa labing-isang uri ng ehersisyo ang nakagawa.',
+      },
+      {
+        name: 'Sariling deck ng bokabularyo',
+        note: 'Maiipon at maitatabi ang mga salitang gusto mong balikan. Ito ang tanging bahagi na wala pang puwesto sa database.',
+      },
+    ],
+  },
+]

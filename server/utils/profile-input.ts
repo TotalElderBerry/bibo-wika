@@ -1,4 +1,4 @@
-import { LANGS, type Lang } from '~~/content/types'
+import { BANDS, LANGS, type Band, type Lang } from '~~/content/types'
 
 /**
  * Shared validation for the three routes that accept a child profile.
@@ -9,9 +9,6 @@ import { LANGS, type Lang } from '~~/content/types'
  * stored with a buddy the child app cannot draw, and it would silently become
  * Tikoy the moment the child opened it.
  */
-export const BANDS = ['usbong', 'puno'] as const
-export type Band = (typeof BANDS)[number]
-
 /**
  * The Phase 0 roster, and the only values the child app can render. Kept in
  * step with `app/utils/buddies.ts` by hand: server code cannot import from
@@ -25,6 +22,11 @@ export function isLang(value: unknown): value is Lang {
   return typeof value === 'string' && (LANGS as readonly string[]).includes(value)
 }
 
+/**
+ * Accepts `matanda` as well as the two child bands. Nothing offers the adult
+ * band to a person yet - the parent dashboard shows it disabled - but the model
+ * and the API agree on it, so authoring and profile data can move first.
+ */
 export function isBand(value: unknown): value is Band {
   return typeof value === 'string' && (BANDS as readonly string[]).includes(value)
 }

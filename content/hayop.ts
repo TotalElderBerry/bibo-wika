@@ -35,7 +35,7 @@ export const hayop: Topic = {
     {
       id: 'animal.dog',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'dog',
       art: 'dog',
       forms: {
@@ -48,7 +48,7 @@ export const hayop: Topic = {
     {
       id: 'animal.cat',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'cat',
       art: 'cat',
       forms: {
@@ -61,7 +61,7 @@ export const hayop: Topic = {
     {
       id: 'animal.chicken',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'chicken',
       art: 'chicken',
       forms: {
@@ -74,7 +74,7 @@ export const hayop: Topic = {
     {
       id: 'animal.fish',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'fish',
       art: 'fish',
       forms: {
@@ -87,7 +87,7 @@ export const hayop: Topic = {
     {
       id: 'animal.bird',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'bird',
       art: 'bird',
       forms: {
@@ -100,7 +100,7 @@ export const hayop: Topic = {
     {
       id: 'animal.carabao',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'carabao',
       art: 'carabao',
       forms: {
@@ -113,7 +113,7 @@ export const hayop: Topic = {
     {
       id: 'animal.turtle',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'turtle',
       art: 'turtle',
       forms: {
@@ -126,7 +126,7 @@ export const hayop: Topic = {
     {
       id: 'animal.butterfly',
       topic: 'hayop',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'butterfly',
       art: 'butterfly',
       forms: {

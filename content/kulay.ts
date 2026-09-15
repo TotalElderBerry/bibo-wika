@@ -36,7 +36,7 @@ export const kulay: Topic = {
     {
       id: 'colour.red',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'red',
       art: 'color-red',
       forms: {
@@ -49,7 +49,7 @@ export const kulay: Topic = {
     {
       id: 'colour.blue',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'blue',
       art: 'color-blue',
       forms: {
@@ -62,7 +62,7 @@ export const kulay: Topic = {
     {
       id: 'colour.yellow',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'yellow',
       art: 'color-yellow',
       forms: {
@@ -75,7 +75,7 @@ export const kulay: Topic = {
     {
       id: 'colour.green',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'green',
       art: 'color-green',
       forms: {
@@ -88,7 +88,7 @@ export const kulay: Topic = {
     {
       id: 'colour.black',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'black',
       art: 'color-black',
       forms: {
@@ -101,7 +101,7 @@ export const kulay: Topic = {
     {
       id: 'colour.white',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'white',
       art: 'color-white',
       forms: {
@@ -114,7 +114,7 @@ export const kulay: Topic = {
     {
       id: 'colour.pink',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'pink',
       art: 'color-pink',
       forms: {
@@ -127,7 +127,7 @@ export const kulay: Topic = {
     {
       id: 'colour.orange',
       topic: 'kulay',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'orange',
       art: 'color-orange',
       forms: {

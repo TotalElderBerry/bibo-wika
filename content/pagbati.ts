@@ -39,7 +39,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.hello',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'hello / how are you',
       art: 'wave',
       forms: {
@@ -52,7 +52,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.good_morning',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'good morning',
       art: 'sunrise',
       forms: {
@@ -65,7 +65,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.good_afternoon',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'good afternoon',
       art: 'sun-high',
       forms: {
@@ -78,7 +78,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.good_evening',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'good evening',
       art: 'moon',
       forms: {
@@ -91,7 +91,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.thank_you',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'thank you',
       art: 'thanks',
       forms: {
@@ -104,7 +104,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.yes',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'yes',
       art: 'yes',
       forms: {
@@ -117,7 +117,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.no',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'no',
       art: 'no',
       forms: {
@@ -130,7 +130,7 @@ export const pagbati: Topic = {
     {
       id: 'greeting.youre_welcome',
       topic: 'pagbati',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: "you're welcome",
       art: 'welcome',
       forms: {

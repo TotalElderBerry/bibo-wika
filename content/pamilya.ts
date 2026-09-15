@@ -37,7 +37,7 @@ export const pamilya: Topic = {
     {
       id: 'family.mother',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'mother',
       art: 'mother',
       forms: {
@@ -50,7 +50,7 @@ export const pamilya: Topic = {
     {
       id: 'family.father',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'father',
       art: 'father',
       forms: {
@@ -63,7 +63,7 @@ export const pamilya: Topic = {
     {
       id: 'family.child',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'child',
       art: 'child',
       forms: {
@@ -76,7 +76,7 @@ export const pamilya: Topic = {
     {
       id: 'family.baby',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'baby',
       art: 'baby',
       forms: {
@@ -89,7 +89,7 @@ export const pamilya: Topic = {
     {
       id: 'family.sibling',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'sibling',
       art: 'sibling',
       forms: {
@@ -102,7 +102,7 @@ export const pamilya: Topic = {
     {
       id: 'family.older_sister',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'older sister',
       art: 'sister',
       forms: {
@@ -115,7 +115,7 @@ export const pamilya: Topic = {
     {
       id: 'family.grandmother',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'grandmother',
       art: 'grandmother',
       forms: {
@@ -128,7 +128,7 @@ export const pamilya: Topic = {
     {
       id: 'family.grandfather',
       topic: 'pamilya',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'grandfather',
       art: 'grandfather',
       forms: {

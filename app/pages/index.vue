@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LANGS, LANG_META } from '~~/content/types'
 import { topics } from '~~/content/topics'
-import { upcoming } from '~~/content/roadmap'
+import { upcoming, upcomingFeatures } from '~~/content/roadmap'
 import { BUDDIES } from '~/utils/buddies'
 
 /**
@@ -400,6 +400,20 @@ useSeoMeta({
               <span class="soon-en">Malapit na</span>
             </span>
           </div>
+
+          <!-- Announced, not built. Same dashed treatment as a locked topic, so
+               the page never implies a person can go and use it today. -->
+          <article v-for="f in upcomingFeatures" :key="f.id" class="chunk soon-feature">
+            <p class="say">Malapit na</p>
+            <h3 class="soon-feature-nm">{{ f.title }}</h3>
+            <p class="soon-feature-tx">{{ f.blurb }}</p>
+            <ul class="soon-parts">
+              <li v-for="part in f.parts" :key="part.name" class="soon-part">
+                <strong>{{ part.name }}</strong>
+                <span>{{ part.note }}</span>
+              </li>
+            </ul>
+          </article>
         </div>
       </section>
 
@@ -1151,6 +1165,61 @@ useSeoMeta({
   display: flex;
   flex-direction: column;
   padding: 10px 16px;
+}
+
+/* An announced feature. Dashed like a locked topic, and deliberately not a
+   link: there is nowhere to send anyone yet. */
+.soon-feature {
+  display: block;
+  margin-top: 18px;
+  padding: 18px 20px;
+  background: transparent;
+  border-style: dashed;
+  border-width: 2.5px;
+  box-shadow: none;
+  max-width: 62ch;
+}
+
+.soon-feature-nm {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.soon-feature-tx {
+  margin-top: 8px;
+  color: var(--tinta-2);
+  line-height: 1.5;
+}
+
+.soon-parts {
+  list-style: none;
+  /* A ul keeps its 40px indent even with no markers. */
+  padding: 0;
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.soon-part {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 14px;
+  border-left: 3px solid var(--linya);
+  line-height: 1.45;
+}
+
+.soon-part strong {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.soon-part span {
+  font-size: 14px;
+  color: var(--tinta-2);
 }
 
 /* Announced but not authored yet - dashed and dimmed, the same signal the

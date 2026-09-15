@@ -1,3 +1,32 @@
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const contentDir = join(dirname(fileURLToPath(import.meta.url)), 'content')
+
+/**
+ * A fingerprint of the authored content, computed at build time.
+ *
+ * This exists because `/api/pack/:lang` is served `immutable` for a year, and
+ * that promise was previously made about a URL that never changed. A child who
+ * had opened the app before a content release kept the old pack forever - the
+ * five topics added after Hayop simply never appeared for them, and no amount
+ * of reloading helped, because `immutable` tells the browser not to ask.
+ *
+ * Putting this in the URL makes the promise true: new content is a new URL, and
+ * the old one is genuinely immutable. It has to be a build-time constant so the
+ * client knows what to ask for without a round trip first.
+ */
+function contentVersion() {
+  const hash = createHash('sha256')
+  for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.ts')).sort()) {
+    hash.update(file)
+    hash.update(readFileSync(join(contentDir, file)))
+  }
+  return hash.digest('hex').slice(0, 12)
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: true },
@@ -30,6 +59,8 @@ export default defineNuxtConfig({
       // there is no usable TTS for ceb / ilo / hil, so this lies about
       // pronunciation. See spec section 08.
       devTts: false,
+      // Cache-busts the language packs. See contentVersion above.
+      contentVersion: contentVersion(),
     },
   },
 
@@ -51,10 +82,10 @@ export default defineNuxtConfig({
     '/magulang/**': { ssr: true, headers: { 'cache-control': 'no-store' } },
     '/admin/**': { ssr: true, robots: false, headers: { 'cache-control': 'no-store' } },
 
-    // Pack manifests are versioned and immutable.
-    '/api/pack/**': {
-      headers: { 'cache-control': 'public, max-age=31536000, immutable' },
-    },
+    // No rule for '/api/pack/**'. There used to be one setting a year-long
+    // immutable header, and it never took effect: defineCachedEventHandler
+    // rewrites cache-control from its own maxAge and replays that header from
+    // the cache entry, so the handler always wins. The pack route sets its own.
   },
 
   pwa: {

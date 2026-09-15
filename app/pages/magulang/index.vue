@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BUDDIES, type BuddyName } from '~/utils/buddies'
-import { LANGS, LANG_META, type Lang } from '~~/content/types'
+import { BANDS, BAND_META, LANGS, LANG_META, type Band, type Lang } from '~~/content/types'
 
 /**
  * The parent dashboard.
@@ -23,7 +23,7 @@ const profile = useProfile()
 interface ProfileSummary {
   id: string
   displayName: string
-  band: 'usbong' | 'puno'
+  band: Band
   avatar: Record<string, string>
   activeLang: string
   xp: number
@@ -36,11 +36,6 @@ interface ProfileSummary {
 
 interface ProfilesResponse {
   profiles: ProfileSummary[]
-}
-
-const BAND_LABELS: Record<'usbong' | 'puno', string> = {
-  usbong: 'Usbong, edad 4-7',
-  puno: 'Puno, edad 8-12',
 }
 
 const { data, pending, error: loadError, refresh } = await useFetch<ProfilesResponse>(
@@ -66,7 +61,7 @@ const form = reactive({
   displayName: '',
   buddy: 'tikoy' as BuddyName,
   lang: 'tl' as Lang,
-  band: 'usbong' as 'usbong' | 'puno',
+  band: 'usbong' as Band,
 })
 
 const profiles = computed(() => data.value?.profiles ?? [])
@@ -81,8 +76,9 @@ function languageName(lang: string) {
   return LANG_META[lang as Lang]?.name ?? lang
 }
 
-function bandName(band: 'usbong' | 'puno') {
-  return BAND_LABELS[band] ?? band
+function bandName(band: Band) {
+  const meta = BAND_META[band]
+  return meta ? `${meta.name}, edad ${meta.ages}` : band
 }
 
 /** The stored buddy is free text as far as Postgres knows; the child app can
@@ -228,7 +224,7 @@ async function useProfileAccount(child: ProfileSummary) {
         id: string
         avatar: Record<string, string>
         activeLang: 'tl' | 'ceb' | 'ilo' | 'hil'
-        band: 'usbong' | 'puno'
+        band: Band
         xp: number
       }
       boxes: Record<string, number>
@@ -297,9 +293,15 @@ useHead({ title: 'Magulang - Bibo Wika' })
           </label>
           <label class="field">
             <span>Antas</span>
+            <!-- The adult band is listed but not selectable. It is announced
+                 and modelled; there is no adult lesson to send anyone to yet,
+                 and an option that quietly does nothing is worse than one that
+                 says it is not ready. -->
             <select v-model="form.band">
-              <option value="usbong">Usbong, edad 4-7</option>
-              <option value="puno">Puno, edad 8-12</option>
+              <option v-for="b in BANDS" :key="b" :value="b" :disabled="!BAND_META[b].built">
+                {{ BAND_META[b].name }}, edad {{ BAND_META[b].ages
+                }}{{ BAND_META[b].built ? '' : ' - malapit na' }}
+              </option>
             </select>
           </label>
           <p v-if="formError" class="error" role="alert">{{ formError }}</p>

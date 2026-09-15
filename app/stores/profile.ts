@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { get, set } from 'idb-keyval'
-import type { Lang } from '~~/content/types'
+import type { Band, Lang } from '~~/content/types'
 import type { BuddyName } from '~/utils/buddies'
 
 const KEY = 'bibo.profile.v1'
@@ -10,7 +10,7 @@ interface ProfileState {
   id: string
   buddy: BuddyName | null
   lang: Lang | null
-  band: 'usbong' | 'puno'
+  band: Band
   xp: number
   /** conceptId:lang -> Leitner box. Local-first; syncs only if a parent opts in. */
   boxes: Record<string, number>
@@ -78,7 +78,7 @@ export const useProfile = defineStore('profile', {
       id: string
       avatar: Record<string, string>
       activeLang: Lang
-      band: 'usbong' | 'puno'
+      band: Band
       xp: number
     }, boxes: Record<string, number>) {
       const buddy = remote.avatar.buddy

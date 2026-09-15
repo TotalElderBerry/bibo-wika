@@ -198,6 +198,9 @@ workflow moves forms to `recorded` and stops there, on purpose.
 
 - No recorded audio, and no reviewed text. Every form is `status: 'pending'`.
 - No Puno (8–12) mode, no reading or spelling exercises
+- No adult track. The `matanda` band exists in `content/types.ts`, in the `band` enum (migration
+  `0002`), in the profile store and in the parent dashboard's band picker, where it is listed and
+  **disabled**. All 48 concepts are marked for it. Nothing routes a person into it — see below.
 - Cross-device profile pairing, background sync, password recovery, and a Parent Gate are not built
 - No admin CMS UI — the API routes exist, the screens do not
 - Avatar customisation axes (skin, hair, outfit, accessory) are specified but not built
@@ -224,6 +227,25 @@ it goes near the recording booth, and these specific calls are the ones to argue
 
 Nothing above blocks the app from running; all of it blocks a recording session.
 
+## Content releases — how a new word reaches a child
+
+`/api/pack/:lang` is cached hard, so the URL carries a fingerprint of everything under `content/`:
+`/api/pack/tl?v=9ff97406d58e`. New content is a new fingerprint, a new URL, and therefore a fetch
+that no cache can answer from the past. **A content change only reaches anyone after a rebuild** —
+the fingerprint is computed in `nuxt.config.ts` at build time. Two things follow:
+
+- In development the fingerprint does not move when you edit `content/`, so the pack route sends
+  `no-store` there. A curriculum lead sees their words on reload.
+- When the admin CMS lands, content edited **directly in Postgres will not move the fingerprint**.
+  Either write CMS changes back to `content/` and redeploy, or give the pack a version that comes
+  from the database instead. This is the trap to remember.
+
+Before this, the route advertised a year-long `immutable` cache in `nuxt.config.ts` and a one-hour
+one from `defineCachedEventHandler`. The handler won — Nitro rewrites `cache-control` from its own
+`maxAge` and replays it from the cache entry — so the route rule was dead config, and every release
+was invisible to a returning child for up to an hour at the browser and another hour at the Nitro
+cache, whichever expired last.
+
 ## Parent accounts
 
 `/magulang` is the one part of the app that **cannot run without a database**. Everything a child
@@ -246,6 +268,37 @@ What the account does and does not own:
 Still not built, and still listed under Phase 0 scope: password recovery, cross-device pairing,
 background sync, and a Parent Gate. There is no rate limit on the login endpoint - put one in front
 of it before a public beta.
+
+## Adult track — announced, not built
+
+*Dialect learning for adults*: the same four languages for someone learning the language their own
+family speaks. It is on the landing page and in `content/roadmap.ts`; it is reachable from nowhere.
+
+What exists today:
+
+| Piece | State |
+| --- | --- |
+| `matanda` band | In the content model, the Postgres enum, the profile store, the API validators |
+| Concepts marked for it | All 48. The words an adult beginner needs are the words a child needs; what differs is pace, framing and exercise type, not which nouns exist |
+| Band picker | Listed and disabled in the parent dashboard, labelled *malapit na* |
+
+The three named features, and what each still needs:
+
+- **Sariling account.** An adult learner logs in as themselves rather than as a child under a
+  parent. Structurally this is the account and session machinery that already exists —
+  `parent_accounts` and `parent_sessions` — pointed at a profile the account owns for itself, with
+  `band: 'matanda'`. The table name will read wrong on the day an adult who is nobody's parent signs
+  up; renaming it is a migration and a find-replace, cheapest done before there is data.
+- **Advanced lessons.** Two of the eleven exercise types in spec section 06 are built, both
+  picture-and-sound. Reading, spelling and sentence-level exercises are the gap, and nothing filters
+  a lesson by band yet — `build()` in `app/pages/laro/[topic].vue` uses every concept in the topic.
+- **Vocabulary deck.** The only one of the three with no model at all. It needs a table, and its
+  shape depends on two questions not yet answered: does a deck belong to a profile or to an account,
+  and is it distinct from the Leitner `progress` rows (a deck is curated by a person; `progress` is
+  written by the system)? Deliberately not invented here.
+
+Naming: `matanda` means "old", which will read oddly to a 25-year-old learning their lola's Ilocano.
+One enum value and one migration to change while nothing depends on it.
 
 ## Known gaps
 

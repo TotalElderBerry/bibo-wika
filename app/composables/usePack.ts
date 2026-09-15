@@ -39,9 +39,17 @@ export interface Compare {
   forms: CompareForm[]
 }
 
-/** Fetch once, then the service worker serves it offline. */
+/**
+ * Fetch once, then the service worker serves it offline.
+ *
+ * The `v` is the content fingerprint from `nuxt.config.ts`. It is what makes
+ * the year-long `immutable` header on this route safe: a content release
+ * changes the fingerprint, which changes the URL, which is the only thing a
+ * browser will re-request once it has been told a response never changes.
+ */
 export function fetchPack(lang: Lang) {
-  return $fetch<Pack>(`/api/pack/${lang}`)
+  const { contentVersion } = useRuntimeConfig().public
+  return $fetch<Pack>(`/api/pack/${lang}`, { query: { v: contentVersion } })
 }
 
 export function fetchCompare(conceptId: string) {

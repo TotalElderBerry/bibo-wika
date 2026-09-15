@@ -16,6 +16,31 @@ export const LANG_META: Record<Lang, { name: string; endonym: string; guide: str
   hil: { name: 'Hiligaynon', endonym: 'Ilonggo', guide: 'Ilyang' },
 }
 
+/**
+ * Age bands.
+ *
+ * `usbong` (shoot) and `puno` (tree) are the two child bands the app was built
+ * around. `matanda` is the adult band - the Dialect learning for adults track,
+ * for someone learning the language their own family speaks.
+ *
+ * **`matanda` is announced, not built.** The band exists in the model and in
+ * Postgres so content can be marked for it and a profile can carry it; there is
+ * no adult entry point, no adult-paced exercise, and nothing filters a lesson by
+ * band yet. Nothing in the app offers it to a person today.
+ *
+ * A naming note for whoever picks this up: `matanda` literally means "old", which
+ * is a strange label for a 25-year-old learning their lola's Ilocano. It is one
+ * enum value and one migration to rename while nothing depends on it.
+ */
+export const BANDS = ['usbong', 'puno', 'matanda'] as const
+export type Band = (typeof BANDS)[number]
+
+export const BAND_META: Record<Band, { name: string; ages: string; built: boolean }> = {
+  usbong: { name: 'Usbong', ages: '4-7', built: true },
+  puno: { name: 'Puno', ages: '8-12', built: true },
+  matanda: { name: 'Matanda', ages: '13+', built: false },
+}
+
 /** Two-pass native-speaker review, spec section 12. Nothing ships at `pending`. */
 export type AudioStatus = 'pending' | 'recorded' | 'approved'
 
@@ -41,7 +66,7 @@ export interface Concept {
   id: string
   topic: string
   /** Which age modes this concept appears in. */
-  bands: Array<'usbong' | 'puno'>
+  bands: Band[]
   en: string
   /** Key into the built-in SVG art set. */
   art: string

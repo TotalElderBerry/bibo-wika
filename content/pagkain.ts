@@ -34,7 +34,7 @@ export const pagkain: Topic = {
     {
       id: 'food.rice',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'cooked rice',
       art: 'rice',
       forms: {
@@ -47,7 +47,7 @@ export const pagkain: Topic = {
     {
       id: 'food.water',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'water',
       art: 'water',
       forms: {
@@ -60,7 +60,7 @@ export const pagkain: Topic = {
     {
       id: 'food.banana',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'banana',
       art: 'banana',
       forms: {
@@ -73,7 +73,7 @@ export const pagkain: Topic = {
     {
       id: 'food.mango',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'mango',
       art: 'mango',
       forms: {
@@ -86,7 +86,7 @@ export const pagkain: Topic = {
     {
       id: 'food.egg',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'egg',
       art: 'egg',
       forms: {
@@ -99,7 +99,7 @@ export const pagkain: Topic = {
     {
       id: 'food.bread',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'bread',
       art: 'bread',
       forms: {
@@ -112,7 +112,7 @@ export const pagkain: Topic = {
     {
       id: 'food.coconut',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'coconut',
       art: 'coconut',
       forms: {
@@ -125,7 +125,7 @@ export const pagkain: Topic = {
     {
       id: 'food.soup',
       topic: 'pagkain',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'soup',
       art: 'soup',
       forms: {

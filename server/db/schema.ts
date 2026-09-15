@@ -13,7 +13,8 @@ import {
 
 /** Spec section 05, as Postgres. Adding Bicolano = adding one enum value. */
 export const langEnum = pgEnum('lang', ['tl', 'ceb', 'ilo', 'hil'])
-export const bandEnum = pgEnum('band', ['usbong', 'puno'])
+/** `matanda` is the adult band. Announced, not built - see content/types.ts. */
+export const bandEnum = pgEnum('band', ['usbong', 'puno', 'matanda'])
 export const audioStatusEnum = pgEnum('audio_status', ['pending', 'recorded', 'approved'])
 
 export const topics = pgTable('topics', {

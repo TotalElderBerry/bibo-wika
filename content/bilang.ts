@@ -30,7 +30,7 @@ export const bilang: Topic = {
     {
       id: 'number.one',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'one',
       art: 'num-1',
       forms: {
@@ -43,7 +43,7 @@ export const bilang: Topic = {
     {
       id: 'number.two',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'two',
       art: 'num-2',
       forms: {
@@ -56,7 +56,7 @@ export const bilang: Topic = {
     {
       id: 'number.three',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'three',
       art: 'num-3',
       forms: {
@@ -69,7 +69,7 @@ export const bilang: Topic = {
     {
       id: 'number.four',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'four',
       art: 'num-4',
       forms: {
@@ -82,7 +82,7 @@ export const bilang: Topic = {
     {
       id: 'number.five',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'five',
       art: 'num-5',
       forms: {
@@ -95,7 +95,7 @@ export const bilang: Topic = {
     {
       id: 'number.six',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'six',
       art: 'num-6',
       forms: {
@@ -108,7 +108,7 @@ export const bilang: Topic = {
     {
       id: 'number.seven',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'seven',
       art: 'num-7',
       forms: {
@@ -121,7 +121,7 @@ export const bilang: Topic = {
     {
       id: 'number.eight',
       topic: 'bilang',
-      bands: ['usbong', 'puno'],
+      bands: ['usbong', 'puno', 'matanda'],
       en: 'eight',
       art: 'num-8',
       forms: {

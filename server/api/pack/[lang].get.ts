@@ -18,6 +18,13 @@ export default defineCachedEventHandler(
       throw createError({ statusCode: 404, statusMessage: `Unknown language: ${lang}` })
     }
 
+    // In dev the fingerprint is only recomputed when nuxt.config reloads, which
+    // an edit to content/ does not do - so the URL stays put while the words
+    // change, and any browser caching at all would show a curriculum lead their
+    // previous draft. Nitro only overwrites this header when `maxAge` is set,
+    // and it is zero in dev.
+    if (import.meta.dev) setHeader(event, 'cache-control', 'no-store')
+
     if (!hasDb()) return buildFromLocal(lang)
 
     const db = useDb()
@@ -67,10 +74,18 @@ export default defineCachedEventHandler(
     return pack(lang, [...byTopic.values()])
   },
   {
-    // Packs are versioned and immutable; a content release is a new version.
-    maxAge: 60 * 60,
+    // A year, because the URL carries the content fingerprint: this exact
+    // `?v=` can only ever mean this exact content. Nitro derives the response
+    // `cache-control` from this value and overwrites anything a route rule set,
+    // so this number is the one that actually ships - which is why the
+    // `/api/pack/**` rule that used to live in nuxt.config was dead config.
+    maxAge: import.meta.dev ? 0 : 60 * 60 * 24 * 365,
     name: 'lang-pack',
-    getKey: (event) => getRouterParam(event, 'lang') ?? 'tl',
+    // The fingerprint belongs in the key. Keyed on language alone, this cache
+    // would keep serving the previous content for an hour after a deploy, to
+    // clients that had just been told the new URL.
+    getKey: (event) =>
+      `${getRouterParam(event, 'lang') ?? 'tl'}-${getQuery(event).v ?? 'unversioned'}`,
   },
 )
 
@@ -96,7 +111,9 @@ function buildFromLocal(lang: Lang) {
 
 function pack(lang: Lang, topics: unknown[]) {
   return {
-    version: `${lang}-${new Date().toISOString().slice(0, 10)}`,
+    // The content fingerprint, not today's date. A date changed nightly while
+    // the content stood still, and stood still while the content changed.
+    version: `${lang}-${useRuntimeConfig().public.contentVersion}`,
     lang,
     source: hasDb() ? 'neon' : 'local-content',
     topics,
